@@ -1,0 +1,435 @@
+.budget-page {
+  padding: 10px;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.budget-header-section .title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.header-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.param-control-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #ffffff;
+  padding: 8px 14px;
+  border: 1px solid #c8d1c0;
+  border-radius: 4px;
+}
+
+.param-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.param-input {
+  width: 76px;
+  padding: 4px 8px;
+  border: 1px solid #a8b3a0;
+  border-radius: 4px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #2b3a26;
+  text-align: right;
+}
+
+.param-label .unit {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.apply-param-btn {
+  padding: 5px 12px;
+  background-color: #5d7553;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.apply-param-btn:hover {
+  background-color: #4a5e42;
+}
+
+.budget-header-section .sub-info {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #556254;
+  margin: 0;
+}
+
+/* 로딩 & 에러 상자 */
+.budget-loading-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  background-color: #ffffff;
+  border: 1px solid #c8d1c0;
+  border-radius: 4px;
+  margin-bottom: 24px;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e0e5db;
+  border-top-color: #5d7553;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.budget-error-box {
+  background-color: #fff4f4;
+  border: 1px solid #f2c0c0;
+  padding: 20px;
+  border-radius: 4px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.budget-error-box .error-text {
+  color: #d32f2f;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.retry-btn {
+  padding: 6px 16px;
+  background-color: #d32f2f;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.retry-btn:hover {
+  background-color: #b71c1c;
+}
+
+/* 카드 3종 가로 배치 */
+.card-container {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  position: relative;
+  flex: 1;
+  border: 1px solid #c8d1c0;
+  background-color: #ffffff;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 90px;
+  border-radius: 4px;
+}
+
+.summary-card .card-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.summary-card .card-value {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #2b3a26;
+}
+
+/* 세 번째 카드 뱃지 & 강조 스타일 */
+.summary-card.alert .badge-v1 {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: #5d7553;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.summary-card.alert.exceeded .badge-v1 {
+  background-color: #d32f2f;
+}
+
+.summary-card.alert .card-value.highlight {
+  color: #2b3a26;
+}
+
+.summary-card.alert.exceeded .card-value.highlight {
+  color: #d32f2f;
+}
+
+/* --- 테이블 섹션 --- */
+.table-section {
+  margin-bottom: 24px;
+}
+
+.table-header-desc {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.section-subtitle {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #2b3a26;
+}
+
+.section-hint {
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.impact-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  background-color: #ffffff;
+}
+
+.impact-table th {
+  background-color: #e9eee4;
+  color: #2b3a26;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 10px 16px;
+  border: 1px solid #c8d1c0;
+}
+
+.impact-table td {
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  color: #333;
+  border: 1px solid #c8d1c0;
+}
+
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.clickable-row:hover {
+  background-color: #f6f8f4;
+}
+
+.clickable-row.row-selected {
+  background-color: #eef3eb;
+  font-weight: 500;
+}
+
+.clickable-row.row-selected td {
+  border-color: #9cb293;
+}
+
+.menu-name-cell strong {
+  color: #2b3a26;
+}
+
+.status-cell {
+  font-weight: 600;
+}
+
+.status-cell.danger {
+  color: #d32f2f;
+}
+
+.status-cell.success {
+  color: #2e7d32;
+}
+
+.empty-row {
+  text-align: center;
+  padding: 24px;
+  color: #888;
+}
+
+/* --- 세부 단가 계산식 --- */
+.calculation-formula-section {
+  margin-bottom: 28px;
+  background-color: #ffffff;
+  border: 1px solid #c8d1c0;
+  border-radius: 4px;
+  padding: 16px 20px;
+}
+
+.formula-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #d5ded0;
+  font-size: 0.95rem;
+  color: #2b3a26;
+}
+
+.formula-total {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.formula-total strong {
+  color: #2b3a26;
+  font-size: 1rem;
+}
+
+.exceeded-badge {
+  color: #d32f2f;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.detail-loading {
+  text-align: center;
+  padding: 16px 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.formula-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formula-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  color: #333;
+  padding: 6px 10px;
+  background-color: #fbfcf9;
+  border-radius: 4px;
+  border: 1px solid #edf1eb;
+}
+
+.formula-item .ingredient-name {
+  font-weight: 700;
+  min-width: 90px;
+  color: #2b3a26;
+}
+
+.formula-item .formula-math {
+  color: #555;
+}
+
+.formula-item .equals {
+  color: #888;
+  font-weight: 600;
+}
+
+.formula-item .line-cost {
+  font-weight: 700;
+  color: #1e2c1a;
+}
+
+.formula-item .unit-label {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.formula-item .price-date {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: #888;
+}
+
+.formula-empty {
+  color: #888;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* --- 하단 액션 버튼 그룹 --- */
+.action-button-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 12px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease-in-out;
+}
+
+/* 테두리 버튼 */
+.action-btn.btn-outline {
+  background-color: #ffffff;
+  color: #333333;
+  border: 1px solid #a8b3a0;
+}
+
+.action-btn.btn-outline:hover {
+  background-color: #5d7553;
+  border-color: #627b58;
+  color: #ffffff;
+}
+
+.action-btn.btn-outline:active {
+  background-color: #e2e9dd;
+  transform: scale(0.98);
+}
+
+/* 강조 채우기 버튼 */
+.action-btn.btn-primary {
+  background-color: #5d7553;
+  color: #ffffff;
+  border: 1px solid #5d7553;
+}
+
+.action-btn.btn-primary:hover {
+  background-color: #4a5e42;
+  border-color: #4a5e42;
+}
+
+.action-btn.btn-primary:active {
+  background-color: #3b4b35;
+  transform: scale(0.98);
+}

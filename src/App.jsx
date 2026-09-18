@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import api, { clearAuth, getStoredUser, saveAuth } from './api/axios'
+import BudgetAnalysisPage from './features/budget/pages/BudgetAnalysisPage'
 import './App.css'
 
 /** 서버의 공통 오류 응답을 사용자용 문장으로 변환합니다. 네트워크 단절도 구분해 안내합니다. */
@@ -198,7 +199,16 @@ function AppRoutes() {
   const navigate = useNavigate()
   const [user, setUser] = useState(() => getStoredUser())
   const logout = () => { clearAuth(); setUser(null); navigate('/login', { replace: true }) }
-  return <Routes><Route path="/login" element={user ? <Navigate to={user.facilityId == null ? '/setup' : '/home'} replace /> : <LoginPage onAuthenticated={setUser} />} /><Route path="/signup" element={user ? <Navigate to="/home" replace /> : <SignupPage />} /><Route path="/setup" element={<ProtectedRoute user={user}><FacilitySetupPage user={user} onAuthenticated={setUser} /></ProtectedRoute>} /><Route path="/home" element={<ProtectedRoute user={user}><HomePage user={user} onLogout={logout} /></ProtectedRoute>} /><Route path="*" element={<Navigate to={user ? '/home' : '/login'} replace />} /></Routes>
+  return (
+    <Routes>
+      <Route path="/login" element={user ? <Navigate to={user.facilityId == null ? '/setup' : '/home'} replace /> : <LoginPage onAuthenticated={setUser} />} />
+      <Route path="/signup" element={user ? <Navigate to="/home" replace /> : <SignupPage />} />
+      <Route path="/setup" element={<ProtectedRoute user={user}><FacilitySetupPage user={user} onAuthenticated={setUser} /></ProtectedRoute>} />
+      <Route path="/home" element={<ProtectedRoute user={user}><HomePage user={user} onLogout={logout} /></ProtectedRoute>} />
+      <Route path="/budget" element={<BudgetAnalysisPage />} />
+      <Route path="*" element={<Navigate to={user ? '/home' : '/login'} replace />} />
+    </Routes>
+  )
 }
 
 function App() {
