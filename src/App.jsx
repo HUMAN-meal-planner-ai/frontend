@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import api, { clearAuth, getStoredUser, saveAuth } from './api/axios'
+import BudgetAnalysisPage from './features/budget/pages/BudgetAnalysisPage'
+import MenuListPage from './features/menu/pages/MenuListPage'
+import LandingPage from './features/landing/pages/LandingPage'
+import FeatureComingSoonPage from './components/common/FeatureComingSoonPage'
 import './App.css'
 
 /** 서버의 공통 오류 응답을 사용자용 문장으로 변환합니다. 네트워크 단절도 구분해 안내합니다. */
@@ -196,9 +200,31 @@ function ProtectedRoute({ user, children }) {
 
 function AppRoutes() {
   const navigate = useNavigate()
+  // 브라우저에 저장된 사용자 정보가 있으면 새로고침 후에도 로그인 상태를 복원합니다.
   const [user, setUser] = useState(() => getStoredUser())
-  const logout = () => { clearAuth(); setUser(null); navigate('/login', { replace: true }) }
-  return <Routes><Route path="/login" element={user ? <Navigate to={user.facilityId == null ? '/setup' : '/home'} replace /> : <LoginPage onAuthenticated={setUser} />} /><Route path="/signup" element={user ? <Navigate to="/home" replace /> : <SignupPage />} /><Route path="/setup" element={<ProtectedRoute user={user}><FacilitySetupPage user={user} onAuthenticated={setUser} /></ProtectedRoute>} /><Route path="/home" element={<ProtectedRoute user={user}><HomePage user={user} onLogout={logout} /></ProtectedRoute>} /><Route path="*" element={<Navigate to={user ? '/home' : '/login'} replace />} /></Routes>
+  // 로그아웃하면 저장된 JWT와 사용자 정보를 제거하고 공개 첫 화면으로 이동합니다.
+  const logout = () => { clearAuth(); setUser(null); navigate('/', { replace: true }) }
+  return (
+    <Routes>
+      {/* 공개 화면: 로그인하지 않은 사용자도 접근할 수 있습니다. */}
+      <Route path="/" element={<LandingPage user={user} onLogout={logout} />} />
+      <Route path="/login" element={user ? <Navigate to={user.facilityId == null ? '/setup' : '/home'} replace /> : <LoginPage onAuthenticated={setUser} />} />
+      <Route path="/signup" element={user ? <Navigate to="/home" replace /> : <SignupPage />} />
+
+      {/* 보호 화면: 사용자 정보가 없으면 ProtectedRoute가 로그인 화면으로 이동시킵니다. */}
+      <Route path="/setup" element={<ProtectedRoute user={user}><FacilitySetupPage user={user} onAuthenticated={setUser} /></ProtectedRoute>} />
+      <Route path="/home" element={<ProtectedRoute user={user}><HomePage user={user} onLogout={logout} /></ProtectedRoute>} />
+      <Route path="/menus" element={<ProtectedRoute user={user}><MenuListPage /></ProtectedRoute>} />
+      <Route path="/budget" element={<ProtectedRoute user={user}><BudgetAnalysisPage /></ProtectedRoute>} />
+
+      {/* 아직 실제 기능 화면이 없는 주소는 공통 준비 중 화면을 사용합니다. */}
+      <Route path="/meal-plans" element={<ProtectedRoute user={user}><FeatureComingSoonPage eyebrow="MEAL PLAN" title="주간 식단 관리" description="식단 저장과 편성 API 연결 후 주간 캘린더가 이 화면에 표시됩니다." /></ProtectedRoute>} />
+      <Route path="/prices" element={<ProtectedRoute user={user}><FeatureComingSoonPage eyebrow="PRICE FORECAST" title="식재료 가격 예측" description="가격 수집과 예측 API 연결 후 품목별 7일 전망을 확인할 수 있습니다." /></ProtectedRoute>} />
+
+      {/* 정의되지 않은 주소로 접근하면 공개 첫 화면으로 되돌립니다. */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
 }
 
 function App() {
