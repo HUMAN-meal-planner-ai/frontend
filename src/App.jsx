@@ -4,6 +4,7 @@ import api, { clearAuth, getStoredUser, saveAuth } from './api/axios'
 import BudgetAnalysisPage from './features/budget/pages/BudgetAnalysisPage'
 import AdminPage from './features/admin/pages/AdminPage'
 import ManagerPage from './features/manager/pages/ManagerPage'
+import MealPlanPage from './features/mealplan/pages/MealPlanPage'
 import MenuListPage from './features/menu/pages/MenuListPage'
 import LandingPage from './features/landing/pages/LandingPage'
 import FeatureComingSoonPage from './components/common/FeatureComingSoonPage'
@@ -239,9 +240,10 @@ function AppRoutes() {
       <Route path="/budget" element={<ProtectedRoute user={user}><BudgetAnalysisPage /></ProtectedRoute>} />
       <Route path="/admin" element={<AdminRoute user={user}><AdminPage user={user} onLogout={logout} /></AdminRoute>} />
       <Route path="/manager" element={<ManagerRoute user={user}><ManagerPage user={user} onLogout={logout} /></ManagerRoute>} />
+      {/* 새로 추가된 주간 식단 화면을 실제 식단 API와 연결합니다. */}
+      <Route path="/meal-plans" element={<ProtectedRoute user={user}><MealPlanPage onLogout={logout} /></ProtectedRoute>} />
 
       {/* 아직 실제 기능 화면이 없는 주소는 공통 준비 중 화면을 사용합니다. */}
-      <Route path="/meal-plans" element={<ProtectedRoute user={user}><FeatureComingSoonPage eyebrow="MEAL PLAN" title="주간 식단 관리" description="식단 저장과 편성 API 연결 후 주간 캘린더가 이 화면에 표시됩니다." /></ProtectedRoute>} />
       <Route path="/prices" element={<ProtectedRoute user={user}><FeatureComingSoonPage eyebrow="PRICE FORECAST" title="식재료 가격 예측" description="가격 수집과 예측 API 연결 후 품목별 7일 전망을 확인할 수 있습니다." /></ProtectedRoute>} />
 
       {/* 정의되지 않은 주소로 접근하면 공개 첫 화면으로 되돌립니다. */}
