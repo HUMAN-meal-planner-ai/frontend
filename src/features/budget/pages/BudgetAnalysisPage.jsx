@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getAllMenuCosts, getMenuCostDetail } from '../api/costApi';
 import './BudgetAnalysisPage.css';
 
@@ -16,8 +16,22 @@ export default function BudgetAnalysisPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // 1. [GET /api/cost/menus] 전체 메뉴 목록 및 원가 일괄 조회
-  const fetchAllCosts = useCallback(async (count = mealCount, target = targetCost) => {
+  // 1. [GET /api/cost/menus/{menuId}] 메뉴별 식재료 원가 상세 조회
+  const fetchMenuDetail = useCallback(async (menuId, count, target) => {
+    if (!menuId) return;
+    setDetailLoading(true);
+    try {
+      const detailData = await getMenuCostDetail(menuId, { mealCount: count, targetCost: target });
+      setSelectedMenuDetail(detailData);
+    } catch (err) {
+      console.error(`[GET /api/cost/menus/${menuId}] 호출 실패:`, err);
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
+
+  // 2. [GET /api/cost/menus] 전체 메뉴 목록 및 원가 일괄 조회
+  const fetchAllCosts = useCallback(async (count, target) => {
     setLoading(true);
     setError(null);
     try {
@@ -41,25 +55,13 @@ export default function BudgetAnalysisPage() {
     } finally {
       setLoading(false);
     }
-  }, [mealCount, targetCost]);
-
-  // 2. [GET /api/cost/menus/{menuId}] 메뉴별 원가 계산 결과 및 식재료 상세 단건 조회
-  const fetchMenuDetail = useCallback(async (menuId, count = mealCount, target = targetCost) => {
-    if (!menuId) return;
-    setDetailLoading(true);
-    try {
-      const detailData = await getMenuCostDetail(menuId, { mealCount: count, targetCost: target });
-      setSelectedMenuDetail(detailData);
-    } catch (err) {
-      console.error(`[GET /api/cost/menus/${menuId}] 호출 실패:`, err);
-    } finally {
-      setDetailLoading(false);
-    }
-  }, [mealCount, targetCost]);
+  }, [fetchMenuDetail]);
 
   useEffect(() => {
-    fetchAllCosts();
-  }, []);
+    // 타이머 콜백으로 초기 API 동기화를 예약해 렌더 중 연쇄 상태 변경을 피합니다.
+    const initialRequest = window.setTimeout(() => fetchAllCosts(100, 2500), 0);
+    return () => window.clearTimeout(initialRequest);
+  }, [fetchAllCosts]);
 
   // 메뉴 행 클릭 핸들러
   const handleSelectMenu = (menuId) => {
@@ -182,7 +184,7 @@ export default function BudgetAnalysisPage() {
       {error && !loading && (
         <div className="budget-error-box">
           <p className="error-text">⚠️ {error}</p>
-          <button type="button" className="retry-btn" onClick={() => fetchAllCosts()}>
+          <button type="button" className="retry-btn" onClick={() => fetchAllCosts(mealCount, targetCost)}>
             다시 시도
           </button>
         </div>
