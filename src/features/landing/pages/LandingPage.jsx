@@ -47,8 +47,22 @@ const serviceCards = [
   },
 ]
 
+/**
+ * KAMIS 당일 가격 API가 연결되기 전 화면 구성을 확인하기 위한 예시 데이터입니다.
+ * 추후 API 연동 시 이 배열을 서버 응답값으로 교체하면 카드 UI를 그대로 사용할 수 있습니다.
+ */
+const valueProduceItems = [
+  { name: '애호박', category: '채소류', unit: '1개', currentPrice: '1,480원', lastYearPrice: '2,120원', savingRate: 30, accent: 'leaf', mark: '호박' },
+  { name: '대파', category: '채소류', unit: '1kg', currentPrice: '2,960원', lastYearPrice: '3,740원', savingRate: 21, accent: 'green', mark: '대파' },
+  { name: '감자', category: '식량작물', unit: '1kg', currentPrice: '2,380원', lastYearPrice: '2,920원', savingRate: 18, accent: 'sand', mark: '감자' },
+  { name: '사과', category: '과일류', unit: '10개', currentPrice: '19,800원', lastYearPrice: '22,400원', savingRate: 12, accent: 'rose', mark: '사과' },
+]
+
 /** 공개 첫 화면입니다. 인증 화면과 분리하고 주요 기능 진입점을 한곳에 모았습니다. */
 export default function LandingPage({ user, onLogout }) {
+  const accountPage = user?.role === 'ADMIN' ? '/admin' : user?.role === 'MANAGER' ? '/manager' : '/home'
+  const accountLabel = user?.role === 'ADMIN' ? '관리자 페이지' : user?.role === 'MANAGER' ? '시설 관리' : '내 대시보드'
+
   return (
     <main className="landing-page">
       {/* 서비스 로고, 화면 이동 메뉴, 로그인 상태별 버튼을 표시하는 상단 영역입니다. */}
@@ -68,7 +82,7 @@ export default function LandingPage({ user, onLogout }) {
           {/* 로그인 상태에서는 대시보드/로그아웃, 비로그인 상태에서는 로그인 버튼을 표시합니다. */}
           {user ? (
             <>
-              <Link className="header-dashboard-link" to="/home">내 대시보드</Link>
+              <Link className="header-dashboard-link" to={accountPage}>{accountLabel}</Link>
               <button className="header-login-button secondary" type="button" onClick={onLogout}>로그아웃</button>
             </>
           ) : (
@@ -77,54 +91,72 @@ export default function LandingPage({ user, onLogout }) {
         </div>
       </header>
 
-      {/* 서비스의 핵심 가치와 분석 결과 예시를 보여주는 첫 화면 대표 영역입니다. */}
-      <section className="landing-hero">
-        <div className="hero-copy">
-          <p className="landing-kicker"><span /> DATA-DRIVEN MEAL PLANNING</p>
-          <h1>가격 변화보다<br /><em>한 끼 먼저</em> 준비하세요.</h1>
-          <p className="hero-description">
-            식재료 가격을 예측하고, 식단 원가와 예산 위험을 미리 확인하세요.<br />
-            MealFit이 안정적인 급식 운영의 시작을 함께합니다.
-          </p>
-          <div className="hero-actions">
-            <Link className="hero-primary-button" to={user ? '/home' : '/login'}>
-              {user ? '대시보드로 이동' : 'MealFit 시작하기'} <span>→</span>
-            </Link>
-            <a className="hero-text-link" href="#services">기능 둘러보기</a>
+
+      {/*
+        KAMIS 당일 가격 API가 연결될 위치를 미리 구성한 정적 화면입니다.
+        현재 숫자는 디자인 확인용 예시이며 실제 시세로 사용하지 않습니다.
+      */}
+      <section className="market-section" id="market-prices">
+        <div className="market-heading">
+          <div>
+            <p className="landing-kicker"><span /> DAILY MARKET PICKS</p>
+            <h2>오늘 더 알뜰한<br />식재료를 확인하세요.</h2>
           </div>
-          <div className="hero-trust-list" aria-label="MealFit 주요 특징">
-            <span>✓ 7일 가격 예측</span>
-            <span>✓ 메뉴별 원가 계산</span>
-            <span>✓ 예산 위험 사전 확인</span>
+          <div className="market-intro">
+            <span className="market-source-badge">KAMIS 가격정보 기반</span>
+            <p>전년도 같은 시기의 가격과 비교해 상대적으로 저렴한 품목을 먼저 보여드려요.</p>
+            <small>2026.09.21 기준 · 현재는 화면 확인용 예시 데이터입니다.</small>
           </div>
         </div>
 
-        <div className="hero-preview" aria-label="MealFit 분석 화면 예시">
-          <div className="preview-orbit orbit-one" />
-          <div className="preview-orbit orbit-two" />
-          <article className="preview-card preview-main-card">
-            <div className="preview-card-head">
-              <div><span>이번 주 예상 식재료비</span><strong>2,600,000원</strong></div>
-              <span className="preview-status">예산 내 운영</span>
+        <div className="market-content">
+          <article className="market-summary-card">
+            <div className="market-summary-top">
+              <span>오늘의 장보기 힌트</span>
+              <span className="market-live-dot"><i /> DAILY</span>
             </div>
-            <div className="preview-chart">
-              <span className="chart-label label-top">예측</span>
-              <svg viewBox="0 0 500 180" role="img" aria-label="가격 예측 상승 곡선">
-                <defs>
-                  <linearGradient id="landingChartArea" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#58bd82" stopOpacity=".34" />
-                    <stop offset="100%" stopColor="#58bd82" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path d="M10 140 C65 138 92 104 140 116 C193 128 218 82 268 89 C318 97 354 47 404 61 C442 71 461 39 490 34 L490 175 L10 175 Z" fill="url(#landingChartArea)" />
-                <path d="M10 140 C65 138 92 104 140 116 C193 128 218 82 268 89 C318 97 354 47 404 61 C442 71 461 39 490 34" fill="none" stroke="#32a766" strokeWidth="5" strokeLinecap="round" />
-                <circle cx="404" cy="61" r="7" fill="#fff" stroke="#32a766" strokeWidth="4" />
-              </svg>
-              <div className="chart-days"><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span></div>
+            <div className="market-summary-copy">
+              <strong>작년보다<br /><em>부담이 낮은</em> 품목</strong>
+              <p>가격 비교 결과를 식단 편성 전에 확인하고 예산에 여유를 만들어 보세요.</p>
+            </div>
+            <div className="market-summary-number">
+              <strong>{valueProduceItems.length}</strong>
+              <span>개 품목</span>
+            </div>
+            <div className="market-summary-foot">
+              <span>최대 절감률</span>
+              <strong>30%↓</strong>
             </div>
           </article>
-          <article className="preview-card preview-risk-card"><span>가격 상승 품목</span><strong>3개</strong><small>양파 · 대파 · 감자</small></article>
-          <article className="preview-card preview-budget-card"><span>예산 사용률</span><strong>78%</strong><div><i /></div></article>
+
+          <div className="produce-grid" aria-label="전년 대비 저렴한 농산물 예시">
+            {valueProduceItems.map((item, index) => (
+              <article className="produce-card" key={item.name}>
+                <div className={`produce-visual ${item.accent}`} aria-hidden="true">
+                  <span>{item.mark}</span>
+                  <i>{String(index + 1).padStart(2, '0')}</i>
+                </div>
+                <div className="produce-card-body">
+                  <div className="produce-card-head">
+                    <div><small>{item.category}</small><h3>{item.name}</h3></div>
+                    <span className="saving-badge">전년 대비 {item.savingRate}%↓</span>
+                  </div>
+                  <div className="produce-price-row">
+                    <div><small>오늘 가격</small><strong>{item.currentPrice}</strong><span>/ {item.unit}</span></div>
+                    <div><small>전년도 가격</small><del>{item.lastYearPrice}</del></div>
+                  </div>
+                  <div className="saving-meter" aria-label={`전년 대비 ${item.savingRate}% 저렴`}>
+                    <i style={{ width: `${item.savingRate}%` }} />
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div className="market-note">
+          <span>가격 비교 안내</span>
+          <p>품목·등급·시장·단위에 따라 가격이 달라질 수 있습니다. 실제 서비스에서는 KAMIS API의 당일 데이터와 전년도 비교 기준을 함께 표시할 예정입니다.</p>
         </div>
       </section>
 
