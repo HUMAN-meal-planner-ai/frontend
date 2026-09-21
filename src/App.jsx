@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import api, { clearAuth, getStoredUser, saveAuth } from './api/axios'
 import BudgetAnalysisPage from './features/budget/pages/BudgetAnalysisPage'
+import AdminPage from './features/admin/pages/AdminPage'
+import ManagerPage from './features/manager/pages/ManagerPage'
 import MenuListPage from './features/menu/pages/MenuListPage'
 import LandingPage from './features/landing/pages/LandingPage'
 import FeatureComingSoonPage from './components/common/FeatureComingSoonPage'
@@ -11,6 +13,13 @@ import './App.css'
 function getErrorMessage(error, fallback) {
   return error.response?.data?.message ||
     (error.request ? '서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.' : fallback)
+}
+
+/** 관리자 계정은 시설 등록 여부와 관계없이 관리자 화면으로 이동합니다. */
+function getDefaultRoute(user) {
+  if (user?.role === 'ADMIN') return '/admin'
+  if (user?.role === 'MANAGER' && user?.facilityId != null) return '/manager'
+  return user?.facilityId == null ? '/setup' : '/home'
 }
 
 /** 로그인과 회원가입 화면 왼쪽에 공통으로 표시하는 MealFit 소개 영역입니다. */
@@ -70,7 +79,7 @@ function LoginPage({ onAuthenticated }) {
       const { data } = await api.post('/api/auth/login', form)
       saveAuth(data.accessToken, data.user)
       onAuthenticated(data.user)
-      navigate(data.user.facilityId == null ? '/setup' : '/home', { replace: true })
+      navigate(getDefaultRoute(data.user), { replace: true })
     } catch (requestError) {
       setError(getErrorMessage(requestError, '로그인에 실패했습니다.'))
     } finally {
@@ -177,7 +186,7 @@ function FacilitySetupPage({ user, onAuthenticated }) {
       // 시설 생성 직후 로컬 사용자 정보도 갱신해 새로고침 시 경로 분기가 달라지지 않게 합니다.
       saveAuth(localStorage.getItem('mealfit_access_token'), nextUser)
       onAuthenticated(nextUser)
-      navigate('/home', { replace: true })
+      navigate(getDefaultRoute(nextUser), { replace: true })
     } catch (requestError) {
       setError(getErrorMessage(requestError, '시설 정보를 저장하지 못했습니다.'))
     } finally {
@@ -198,6 +207,18 @@ function ProtectedRoute({ user, children }) {
   return user ? children : <Navigate to="/login" replace />
 }
 
+/** 화면 주소를 직접 입력해도 ADMIN 권한이 아닌 사용자는 관리자 페이지에 들어갈 수 없게 합니다. */
+function AdminRoute({ user, children }) {
+  if (!user) return <Navigate to="/login" replace />
+  return user.role === 'ADMIN' ? children : <Navigate to="/home" replace />
+}
+
+/** 시설 운영 화면은 MANAGER 역할을 가진 계정만 접근할 수 있습니다. */
+function ManagerRoute({ user, children }) {
+  if (!user) return <Navigate to="/login" replace />
+  return user.role === 'MANAGER' ? children : <Navigate to={getDefaultRoute(user)} replace />
+}
+
 function AppRoutes() {
   const navigate = useNavigate()
   // 브라우저에 저장된 사용자 정보가 있으면 새로고침 후에도 로그인 상태를 복원합니다.
@@ -208,14 +229,16 @@ function AppRoutes() {
     <Routes>
       {/* 공개 화면: 로그인하지 않은 사용자도 접근할 수 있습니다. */}
       <Route path="/" element={<LandingPage user={user} onLogout={logout} />} />
-      <Route path="/login" element={user ? <Navigate to={user.facilityId == null ? '/setup' : '/home'} replace /> : <LoginPage onAuthenticated={setUser} />} />
-      <Route path="/signup" element={user ? <Navigate to="/home" replace /> : <SignupPage />} />
+      <Route path="/login" element={user ? <Navigate to={getDefaultRoute(user)} replace /> : <LoginPage onAuthenticated={setUser} />} />
+      <Route path="/signup" element={user ? <Navigate to={getDefaultRoute(user)} replace /> : <SignupPage />} />
 
       {/* 보호 화면: 사용자 정보가 없으면 ProtectedRoute가 로그인 화면으로 이동시킵니다. */}
       <Route path="/setup" element={<ProtectedRoute user={user}><FacilitySetupPage user={user} onAuthenticated={setUser} /></ProtectedRoute>} />
       <Route path="/home" element={<ProtectedRoute user={user}><HomePage user={user} onLogout={logout} /></ProtectedRoute>} />
       <Route path="/menus" element={<ProtectedRoute user={user}><MenuListPage /></ProtectedRoute>} />
       <Route path="/budget" element={<ProtectedRoute user={user}><BudgetAnalysisPage /></ProtectedRoute>} />
+      <Route path="/admin" element={<AdminRoute user={user}><AdminPage user={user} onLogout={logout} /></AdminRoute>} />
+      <Route path="/manager" element={<ManagerRoute user={user}><ManagerPage user={user} onLogout={logout} /></ManagerRoute>} />
 
       {/* 아직 실제 기능 화면이 없는 주소는 공통 준비 중 화면을 사용합니다. */}
       <Route path="/meal-plans" element={<ProtectedRoute user={user}><FeatureComingSoonPage eyebrow="MEAL PLAN" title="주간 식단 관리" description="식단 저장과 편성 API 연결 후 주간 캘린더가 이 화면에 표시됩니다." /></ProtectedRoute>} />
