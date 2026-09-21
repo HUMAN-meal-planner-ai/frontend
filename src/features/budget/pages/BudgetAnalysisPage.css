@@ -1,435 +1,1057 @@
-.budget-page {
-  padding: 10px;
-  max-width: 860px;
+/* ========================================================
+   MealFit - 원가 및 예산 분석 페이지 (메인 화면 디자인 통일)
+   ======================================================== */
+
+.budget-root-layout {
+  min-height: 100vh;
+  background: radial-gradient(circle at 88% 10%, rgba(116, 206, 147, 0.22), transparent 28%),
+              radial-gradient(circle at 12% 40%, rgba(116, 206, 147, 0.12), transparent 32%),
+              linear-gradient(145deg, #f8fbf8 0%, #edf7f0 100%);
+  color: #19382a;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', Roboto, sans-serif;
+}
+
+.budget-main-wrapper {
+  position: relative;
+  padding: 40px clamp(24px, 5vw, 80px) 90px;
+}
+
+.budget-content-container {
+  max-width: 1280px;
   margin: 0 auto;
 }
 
-.budget-header-section .title {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 12px;
+/* ========================================================
+   1. 헤더 소개 영역 & 글래스모피즘 필터 바
+   ======================================================== */
+.budget-intro-section {
+  margin-bottom: 28px;
 }
 
-.header-meta-row {
+.budget-intro-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
+  align-items: flex-end;
+  gap: 20px;
   margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
-.param-control-group {
+.budget-intro-row h1 {
+  margin: 0 0 10px;
+  color: #173f2d;
+  font-size: clamp(32px, 3.8vw, 48px);
+  line-height: 1.15;
+  letter-spacing: -2px;
+}
+
+.budget-intro-row h1 em {
+  color: #38a369;
+  font-style: normal;
+}
+
+.budget-intro-desc {
+  margin: 0;
+  color: #677d70;
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 680px;
+}
+
+.budget-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(203, 223, 209, 0.86);
+  box-shadow: 0 4px 14px rgba(44, 92, 62, 0.05);
+  font-size: 13px;
+  color: #4a6355;
+  backdrop-filter: blur(12px);
+}
+
+.budget-meta-pill strong {
+  color: #20784a;
+}
+
+.pill-divider {
+  width: 1px;
+  height: 14px;
+  background-color: #c9dbcf;
+}
+
+/* 필터 카드 (글래스모피즘) */
+.budget-filter-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  background-color: #ffffff;
-  padding: 8px 14px;
-  border: 1px solid #c8d1c0;
-  border-radius: 4px;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 18px 24px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(203, 223, 209, 0.88);
+  box-shadow: 0 12px 32px rgba(44, 92, 62, 0.06);
+  backdrop-filter: blur(18px);
 }
 
-.param-label {
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #318458;
+  text-transform: uppercase;
+}
+
+.filter-input-wrap {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #333;
+  padding: 8px 14px;
+  background: #f5f9f6;
+  border: 1px solid #d0e2d6;
+  border-radius: 10px;
+  transition: all 0.2s;
 }
 
-.param-input {
-  width: 76px;
-  padding: 4px 8px;
-  border: 1px solid #a8b3a0;
-  border-radius: 4px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #2b3a26;
+.filter-input-wrap:focus-within {
+  border-color: #42a96e;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(66, 169, 110, 0.15);
+}
+
+.filter-input-wrap input {
+  width: 80px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  color: #173f2d;
   text-align: right;
+  outline: none;
 }
 
-.param-label .unit {
-  font-size: 0.85rem;
-  color: #666;
+.filter-input-wrap em {
+  font-style: normal;
+  font-size: 12px;
+  color: #7b9485;
 }
 
-.apply-param-btn {
-  padding: 5px 12px;
-  background-color: #5d7553;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
+.filter-date-input {
+  padding: 8px 12px;
+  background: #f5f9f6;
+  border: 1px solid #d0e2d6;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #173f2d;
+  outline: none;
+  transition: all 0.2s;
 }
 
-.apply-param-btn:hover {
-  background-color: #4a5e42;
+.filter-date-input:focus {
+  border-color: #42a96e;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(66, 169, 110, 0.15);
 }
 
-.budget-header-section .sub-info {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #556254;
-  margin: 0;
-}
-
-/* 로딩 & 에러 상자 */
-.budget-loading-box {
-  display: flex;
-  flex-direction: column;
+.filter-apply-btn {
+  margin-left: auto;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 48px 20px;
-  background-color: #ffffff;
-  border: 1px solid #c8d1c0;
-  border-radius: 4px;
-  margin-bottom: 24px;
-  color: #555;
-  font-size: 0.95rem;
-}
-
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #e0e5db;
-  border-top-color: #5d7553;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 12px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.budget-error-box {
-  background-color: #fff4f4;
-  border: 1px solid #f2c0c0;
-  padding: 20px;
-  border-radius: 4px;
-  margin-bottom: 24px;
-  text-align: center;
-}
-
-.budget-error-box .error-text {
-  color: #d32f2f;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-
-.retry-btn {
-  padding: 6px 16px;
-  background-color: #d32f2f;
-  color: #fff;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 10px;
   border: none;
-  border-radius: 4px;
+  background: linear-gradient(135deg, #267d50, #3aaa6d);
+  box-shadow: 0 8px 20px rgba(36, 126, 79, 0.22);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
   cursor: pointer;
-  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-.retry-btn:hover {
-  background-color: #b71c1c;
+.filter-apply-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(36, 126, 79, 0.3);
+  background: linear-gradient(135deg, #226f47, #339d63);
 }
 
-/* 카드 3종 가로 배치 */
-.card-container {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
+.filter-apply-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
-.summary-card {
-  position: relative;
-  flex: 1;
-  border: 1px solid #c8d1c0;
-  background-color: #ffffff;
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 90px;
-  border-radius: 4px;
+.filter-apply-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
-.summary-card .card-label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 8px;
+/* ========================================================
+   2. 예산 위험 알림 카드 (Budget Risk Card)
+   ======================================================== */
+.budget-risk-card-hero {
+  border-radius: 22px;
+  padding: 24px 28px;
+  margin-bottom: 28px;
+  border: 1px solid rgba(203, 223, 209, 0.86);
+  box-shadow: 0 16px 45px rgba(44, 92, 62, 0.08);
+  backdrop-filter: blur(18px);
+  transition: all 0.3s;
 }
 
-.summary-card .card-value {
-  font-size: 1.45rem;
-  font-weight: 700;
-  color: #2b3a26;
+.budget-risk-card-hero.stable {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(237, 247, 240, 0.95) 100%);
 }
 
-/* 세 번째 카드 뱃지 & 강조 스타일 */
-.summary-card.alert .badge-v1 {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background-color: #5d7553;
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 4px;
+.budget-risk-card-hero.warning {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(253, 249, 242, 0.95) 100%);
+  border-color: #f7d6a5;
 }
 
-.summary-card.alert.exceeded .badge-v1 {
-  background-color: #d32f2f;
+.budget-risk-card-hero.danger {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(254, 242, 242, 0.95) 100%);
+  border-color: #fca5a5;
 }
 
-.summary-card.alert .card-value.highlight {
-  color: #2b3a26;
-}
-
-.summary-card.alert.exceeded .card-value.highlight {
-  color: #d32f2f;
-}
-
-/* --- 테이블 섹션 --- */
-.table-section {
-  margin-bottom: 24px;
-}
-
-.table-header-desc {
+.risk-card-top {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.risk-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.risk-level-tag {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 800;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.budget-risk-card-hero.stable .risk-level-tag { color: #258252; }
+.budget-risk-card-hero.warning .risk-level-tag { color: #d78245; }
+.budget-risk-card-hero.danger .risk-level-tag { color: #dc2626; }
+
+.budget-usage-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  font-size: 12px;
+  color: #516d5d;
+  font-weight: 700;
+}
+
+.budget-usage-pill strong {
+  font-size: 14px;
+}
+
+.risk-facility-info {
+  font-size: 13px;
+  color: #72877b;
+  font-weight: 700;
+}
+
+.risk-message-text {
+  margin: 0 0 20px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a3f2d;
+  line-height: 1.45;
+}
+
+.risk-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.risk-stat-box {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(218, 230, 221, 0.7);
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #7a8e82;
+}
+
+.stat-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: #173f2d;
+}
+
+.stat-val.highlight {
+  color: #287b50;
+}
+
+.val-danger {
+  color: #dc2626 !important;
+}
+
+.val-success {
+  color: #258252 !important;
+}
+
+/* ========================================================
+   3. 분석 모드 탭 네비게이션
+   ======================================================== */
+.budget-nav-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(218, 230, 221, 0.9);
+  padding-bottom: 4px;
+  overflow-x: auto;
+}
+
+.nav-tab-item {
+  position: relative;
+  padding: 12px 20px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 800;
+  color: #6c8275;
+  cursor: pointer;
+  border-radius: 10px 10px 0 0;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.nav-tab-item:hover {
+  color: #20784a;
+}
+
+.nav-tab-item.active {
+  color: #20784a;
+}
+
+.nav-tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #36a266;
+  border-radius: 3px;
+}
+
+/* ========================================================
+   4. 글래스모피즘 패널 & 지표 카드 그리드
+   ======================================================== */
+.tab-fade-in {
+  animation: fadeInTab 0.3s ease-in-out;
+}
+
+@keyframes fadeInTab {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.budget-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.budget-stat-card {
+  border: 1px solid rgba(203, 223, 209, 0.86);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 40px rgba(44, 92, 62, 0.07);
+  backdrop-filter: blur(18px);
+  padding: 22px 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 120px;
+}
+
+.card-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  color: #72877b;
   margin-bottom: 8px;
 }
 
-.section-subtitle {
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #2b3a26;
+.card-number {
+  font-size: 28px;
+  font-weight: 800;
+  color: #173f2d;
+  line-height: 1.15;
 }
 
-.section-hint {
-  font-size: 0.8rem;
-  color: #777;
+.card-sub-info {
+  font-size: 12px;
+  color: #8fa196;
+  margin-top: 6px;
 }
 
-.impact-table {
+.card-alert {
+  border-color: #fca5a5;
+  background: linear-gradient(145deg, #ffffff, #fff7f7);
+}
+
+.text-red { color: #dc2626 !important; }
+.text-green { color: #258252 !important; }
+
+/* 세그먼트 컨트롤 */
+.tab-control-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.brand-segmented-control {
+  display: inline-flex;
+  padding: 4px;
+  background: rgba(234, 244, 237, 0.9);
+  border-radius: 12px;
+  gap: 4px;
+}
+
+.segment-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 800;
+  color: #516d5d;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.segment-btn.active {
+  background: #ffffff;
+  color: #20784a;
+  box-shadow: 0 4px 12px rgba(44, 92, 62, 0.12);
+}
+
+.control-caption {
+  font-size: 12px;
+  color: #72877b;
+  font-weight: 600;
+}
+
+/* 글래스 패널 */
+.budget-glass-panel {
+  border: 1px solid rgba(203, 223, 209, 0.86);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 45px rgba(44, 92, 62, 0.07);
+  backdrop-filter: blur(18px);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.panel-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 26px;
+  border-bottom: 1px solid rgba(224, 236, 228, 0.9);
+  background: rgba(250, 253, 250, 0.7);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.panel-header-bar h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #173f2d;
+}
+
+.panel-desc {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #72877b;
+}
+
+.panel-header-tip {
+  font-size: 12px;
+  color: #7b9485;
+}
+
+/* ========================================================
+   5. 브랜드 테이블 스타일
+   ======================================================== */
+.brand-table-wrapper {
+  overflow-x: auto;
+}
+
+.brand-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  background-color: #ffffff;
 }
 
-.impact-table th {
-  background-color: #e9eee4;
-  color: #2b3a26;
-  font-weight: 700;
-  font-size: 0.9rem;
-  padding: 10px 16px;
-  border: 1px solid #c8d1c0;
+.brand-table th {
+  background: #f4f9f5;
+  color: #315843;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #dce9df;
+  letter-spacing: 0.2px;
 }
 
-.impact-table td {
-  padding: 10px 16px;
-  font-size: 0.9rem;
-  color: #333;
-  border: 1px solid #c8d1c0;
+.brand-table td {
+  padding: 14px 20px;
+  font-size: 13px;
+  color: #263f31;
+  border-bottom: 1px solid #edf4ef;
 }
 
-.clickable-row {
+.table-clickable-row {
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
-.clickable-row:hover {
-  background-color: #f6f8f4;
+.table-clickable-row:hover {
+  background-color: #f5faf6;
 }
 
-.clickable-row.row-selected {
-  background-color: #eef3eb;
-  font-weight: 500;
+.table-clickable-row.row-active {
+  background-color: #edf7f0;
+  font-weight: 700;
 }
 
-.clickable-row.row-selected td {
-  border-color: #9cb293;
+.id-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #eef4f0;
+  color: #516d5d;
+  font-weight: 800;
+  font-size: 11px;
 }
 
-.menu-name-cell strong {
-  color: #2b3a26;
+.menu-name-text {
+  color: #173f2d;
+  font-size: 14px;
 }
 
-.status-cell {
-  font-weight: 600;
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
 }
 
-.status-cell.danger {
-  color: #d32f2f;
+.pill-danger {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
 }
 
-.status-cell.success {
-  color: #2e7d32;
+.pill-success {
+  background: #eaf7ef;
+  color: #258252;
+  border: 1px solid #c9edd7;
 }
 
-.empty-row {
+.table-empty {
   text-align: center;
-  padding: 24px;
-  color: #888;
+  padding: 48px;
+  color: #8fa196;
+  font-size: 14px;
 }
 
-/* --- 세부 단가 계산식 --- */
-.calculation-formula-section {
-  margin-bottom: 28px;
-  background-color: #ffffff;
-  border: 1px solid #c8d1c0;
+/* ========================================================
+   6. 세부 계산식 카드 그리드
+   ======================================================== */
+.formula-sum-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #4a6355;
+}
+
+.formula-sum-badge strong {
+  font-size: 16px;
+  color: #173f2d;
+}
+
+.exceed-tag {
+  color: #dc2626;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.formula-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  padding: 20px 24px;
+}
+
+.formula-card-item {
+  background: #fbfdfb;
+  border: 1px solid #e1ece4;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ing-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1a3f2d;
+}
+
+.ing-calc {
+  font-size: 12px;
+  color: #72877b;
+}
+
+.ing-cost {
+  font-size: 16px;
+  font-weight: 800;
+  color: #20784a;
+  margin-top: 2px;
+}
+
+.ing-date {
+  font-size: 10px;
+  color: #9aaba1;
+}
+
+.detail-loading-box {
+  padding: 30px;
+  text-align: center;
+  color: #6e8176;
+  font-size: 13px;
+}
+
+/* ========================================================
+   7. Cost Driver 카드 & 랭킹
+   ======================================================== */
+.driver-cards-masonry {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.driver-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(203, 223, 209, 0.86);
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-shadow: 0 10px 26px rgba(44, 92, 62, 0.05);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.driver-card:hover {
+  transform: translateY(-3px);
+  border-color: #42a96e;
+  box-shadow: 0 16px 36px rgba(44, 92, 62, 0.1);
+}
+
+.driver-card.active {
+  border-color: #287b50;
+  background: #fbfdfb;
+  box-shadow: 0 0 0 2px rgba(40, 123, 80, 0.25);
+}
+
+.driver-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.driver-menu-title {
+  font-size: 14px;
+  color: #173f2d;
+  flex: 1;
+}
+
+.driver-rate-tag {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 800;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.driver-top-box {
+  background: #f7faf8;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.driver-top-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #b91c1c;
+  margin-bottom: 4px;
+}
+
+.driver-top-detail .top-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #173f2d;
+}
+
+.driver-top-detail .top-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #6e8176;
+  margin-top: 2px;
+}
+
+.safe-text {
+  font-size: 12px;
+  color: #258252;
+  font-weight: 700;
+}
+
+.row-top-driver {
+  background: #fff8f8 !important;
+}
+
+.rank-pill {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  background: #eef3f0;
+  color: #4a6355;
+}
+
+.rank-pill.rank-1 {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.driver-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.driver-bar-fill {
+  height: 6px;
+  background: #ef4444;
   border-radius: 4px;
-  padding: 16px 20px;
 }
 
-.formula-header {
+/* ========================================================
+   8. 2주간 식단 & 월간 시뮬레이션 (COST-012, 013, 014)
+   ======================================================== */
+.monthly-cost-summary-card {
+  border: 1px solid rgba(203, 223, 209, 0.86);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 40px rgba(44, 92, 62, 0.07);
+  padding: 22px 26px;
+  margin-bottom: 24px;
+}
+
+.monthly-cost-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px dashed #d5ded0;
-  font-size: 0.95rem;
-  color: #2b3a26;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.formula-total {
-  font-size: 0.9rem;
-  color: #555;
+.monthly-cost-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #173f2d;
 }
 
-.formula-total strong {
-  color: #2b3a26;
-  font-size: 1rem;
+.monthly-total-highlight {
+  font-size: 14px;
+  color: #556b5d;
 }
 
-.exceeded-badge {
-  color: #d32f2f;
-  font-weight: 600;
-  font-size: 0.85rem;
+.monthly-total-highlight strong {
+  font-size: 18px;
+  color: #20784a;
 }
 
-.detail-loading {
-  text-align: center;
-  padding: 16px 0;
-  color: #666;
-  font-size: 0.9rem;
+.weekly-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
 }
 
-.formula-list {
+.weekly-cost-item {
+  background: #f7faf8;
+  border: 1px solid #e2eee6;
+  border-radius: 12px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
+  gap: 4px;
+}
+
+.wk-num {
+  font-size: 12px;
+  font-weight: 700;
+  color: #72877b;
+}
+
+.wk-cost {
+  font-size: 18px;
+  font-weight: 800;
+  color: #173f2d;
+}
+
+.wk-meal-count {
+  font-size: 11px;
+  color: #90a396;
+}
+
+.schedule-two-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 860px) {
+  .schedule-two-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.schedule-pane {
+  border: 1px solid rgba(203, 223, 209, 0.86);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 40px rgba(44, 92, 62, 0.07);
+  overflow: hidden;
+}
+
+.schedule-pane-head {
+  padding: 16px 22px;
+  background: #eef7f1;
+  border-bottom: 1px solid #dce9df;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.formula-item {
+.schedule-pane.next-pane .schedule-pane-head {
+  background: #f8faf2;
+}
+
+.schedule-pane-head h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #173f2d;
+}
+
+.pane-range {
+  font-size: 11px;
+  color: #72877b;
+  font-weight: 700;
+}
+
+.pane-cost {
+  font-size: 14px;
+  font-weight: 800;
+  color: #287b50;
+}
+
+.schedule-items-list {
+  padding: 16px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.schedule-plan-card {
+  background: #fbfdfb;
+  border: 1px solid #e1ece4;
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.plan-meta-row {
+  display: flex;
   gap: 8px;
-  font-size: 0.92rem;
-  color: #333;
-  padding: 6px 10px;
-  background-color: #fbfcf9;
+  font-size: 11px;
+  color: #72877b;
+  margin-bottom: 6px;
+}
+
+.plan-date-text {
+  font-weight: 800;
+  color: #173f2d;
+}
+
+.plan-slot-badge {
+  background: #eaf4ed;
+  color: #287b50;
+  padding: 1px 6px;
   border-radius: 4px;
-  border: 1px solid #edf1eb;
+  font-weight: 800;
 }
 
-.formula-item .ingredient-name {
-  font-weight: 700;
-  min-width: 90px;
-  color: #2b3a26;
-}
-
-.formula-item .formula-math {
-  color: #555;
-}
-
-.formula-item .equals {
-  color: #888;
-  font-weight: 600;
-}
-
-.formula-item .line-cost {
-  font-weight: 700;
-  color: #1e2c1a;
-}
-
-.formula-item .unit-label {
-  font-size: 0.8rem;
-  color: #888;
-}
-
-.formula-item .price-date {
-  margin-left: auto;
-  font-size: 0.78rem;
-  color: #888;
-}
-
-.formula-empty {
-  color: #888;
-  font-size: 0.9rem;
-  text-align: center;
-  padding: 12px 0;
-}
-
-/* --- 하단 액션 버튼 그룹 --- */
-.action-button-group {
+.plan-main-row {
   display: flex;
-  gap: 12px;
+  justify-content: space-between;
   align-items: center;
 }
 
-.action-btn {
-  flex: 1;
-  padding: 12px 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  border-radius: 4px;
+.plan-menu-title {
+  font-size: 14px;
+  color: #173f2d;
+}
+
+.plan-price-text {
+  font-size: 14px;
+  font-weight: 800;
+  color: #20784a;
+}
+
+/* ========================================================
+   9. 하단 액션 버튼 그룹 (메인 화면 스타일)
+   ======================================================== */
+.budget-bottom-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 32px;
+}
+
+.action-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 140px;
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
   cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.action-pill-btn.secondary {
+  border: 1px solid #287b50;
+  color: #287b50;
+  background: #ffffff;
+}
+
+.action-pill-btn.secondary:hover {
+  background: #f3faf5;
+  transform: translateY(-1px);
+}
+
+.action-pill-btn.primary {
+  border: none;
+  color: #ffffff;
+  background: linear-gradient(135deg, #267d50, #3aaa6d);
+  box-shadow: 0 12px 24px rgba(36, 126, 79, 0.23);
+}
+
+.action-pill-btn.primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px rgba(36, 126, 79, 0.3);
+}
+
+.action-pill-btn.primary:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 로딩 & 에러 상자 */
+.loading-panel, .error-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
   text-align: center;
-  transition: all 0.2s ease-in-out;
 }
 
-/* 테두리 버튼 */
-.action-btn.btn-outline {
-  background-color: #ffffff;
-  color: #333333;
-  border: 1px solid #a8b3a0;
+.brand-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #dcefe2;
+  border-top-color: #38a369;
+  border-radius: 50%;
+  animation: brand-spin 0.8s linear infinite;
+  margin-bottom: 14px;
 }
 
-.action-btn.btn-outline:hover {
-  background-color: #5d7553;
-  border-color: #627b58;
-  color: #ffffff;
+@keyframes brand-spin {
+  to { transform: rotate(360deg); }
 }
 
-.action-btn.btn-outline:active {
-  background-color: #e2e9dd;
-  transform: scale(0.98);
-}
-
-/* 강조 채우기 버튼 */
-.action-btn.btn-primary {
-  background-color: #5d7553;
-  color: #ffffff;
-  border: 1px solid #5d7553;
-}
-
-.action-btn.btn-primary:hover {
-  background-color: #4a5e42;
-  border-color: #4a5e42;
-}
-
-.action-btn.btn-primary:active {
-  background-color: #3b4b35;
-  transform: scale(0.98);
+.error-text {
+  color: #dc2626;
+  font-weight: 700;
+  margin-bottom: 14px;
 }
