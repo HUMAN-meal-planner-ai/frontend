@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import api, { clearAuth, getStoredUser, saveAuth } from './api/axios'
+import MealPlanPage from './features/mealplan/pages/MealPlanPage'
 import './App.css'
 
 /** 서버의 공통 오류 응답을 사용자용 문장으로 변환합니다. 네트워크 단절도 구분해 안내합니다. */
@@ -186,7 +187,8 @@ function FacilitySetupPage({ user, onAuthenticated }) {
 
 /** 인증과 시설 설정 완료를 확인하는 최소 홈입니다. 실제 대시보드 API가 준비되면 카드만 교체할 수 있습니다. */
 function HomePage({ user, onLogout }) {
-  return <main className="home-page"><header className="home-header"><strong>MEAL<span>FIT</span></strong><button onClick={onLogout}>로그아웃</button></header><section className="home-content"><p className="eyebrow">OPERATIONS HOME</p><h1>{user?.name}님, 좋은 하루예요.</h1><p>로그인과 시설 연결이 완료되었습니다. 대시보드 데이터가 준비되면 이곳에서 확인할 수 있습니다.</p><div className="home-grid"><article><span>예상 식재료비</span><strong>데이터 준비 중</strong></article><article><span>가격 상승 영향</span><strong>데이터 준비 중</strong></article></div></section></main>
+  const navigate = useNavigate()
+  return <main className="home-page"><header className="home-header"><strong>MEAL<span>FIT</span></strong><button onClick={onLogout}>로그아웃</button></header><section className="home-content"><p className="eyebrow">OPERATIONS HOME</p><h1>{user?.name}님, 좋은 하루예요.</h1><p>로그인과 시설 연결이 완료되었습니다. 대시보드 데이터가 준비되면 이곳에서 확인할 수 있습니다.</p><div className="home-grid"><article><span>예상 식재료비</span><strong>데이터 준비 중</strong></article><article><span>가격 상승 영향</span><strong>데이터 준비 중</strong></article></div><button className="primary-button home-action" onClick={() => navigate('/meal-plan')}>주간 식단 만들기</button></section></main>
 }
 
 /** 토큰 사용자 정보가 없을 때 보호 화면 주소에 직접 접근하지 못하게 합니다. */
@@ -198,7 +200,7 @@ function AppRoutes() {
   const navigate = useNavigate()
   const [user, setUser] = useState(() => getStoredUser())
   const logout = () => { clearAuth(); setUser(null); navigate('/login', { replace: true }) }
-  return <Routes><Route path="/login" element={user ? <Navigate to={user.facilityId == null ? '/setup' : '/home'} replace /> : <LoginPage onAuthenticated={setUser} />} /><Route path="/signup" element={user ? <Navigate to="/home" replace /> : <SignupPage />} /><Route path="/setup" element={<ProtectedRoute user={user}><FacilitySetupPage user={user} onAuthenticated={setUser} /></ProtectedRoute>} /><Route path="/home" element={<ProtectedRoute user={user}><HomePage user={user} onLogout={logout} /></ProtectedRoute>} /><Route path="*" element={<Navigate to={user ? '/home' : '/login'} replace />} /></Routes>
+  return <Routes><Route path="/login" element={user ? <Navigate to={user.facilityId == null ? '/setup' : '/home'} replace /> : <LoginPage onAuthenticated={setUser} />} /><Route path="/signup" element={user ? <Navigate to="/home" replace /> : <SignupPage />} /><Route path="/setup" element={<ProtectedRoute user={user}><FacilitySetupPage user={user} onAuthenticated={setUser} /></ProtectedRoute>} /><Route path="/home" element={<ProtectedRoute user={user}><HomePage user={user} onLogout={logout} /></ProtectedRoute>} /><Route path="/meal-plan" element={<ProtectedRoute user={user}><MealPlanPage user={user} onLogout={logout} /></ProtectedRoute>} /><Route path="*" element={<Navigate to={user ? '/home' : '/login'} replace />} /></Routes>
 }
 
 function App() {
