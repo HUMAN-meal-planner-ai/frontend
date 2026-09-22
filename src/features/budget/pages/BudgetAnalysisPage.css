@@ -197,7 +197,7 @@
 }
 
 /* ========================================================
-   2. 예산 위험 알림 카드 (Budget Risk Card)
+   2. 예산 위험 & 사용률 알림 카드 (Budget Risk Card)
    ======================================================== */
 .budget-risk-card-hero {
   border-radius: 22px;
@@ -228,12 +228,15 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .risk-badge-group {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .risk-level-tag {
@@ -252,8 +255,8 @@
 .budget-usage-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
+  gap: 8px;
+  padding: 6px 16px;
   border-radius: 20px;
   background: #ffffff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
@@ -273,11 +276,53 @@
 }
 
 .risk-message-text {
-  margin: 0 0 20px;
-  font-size: 16px;
+  margin: 0 0 16px;
+  font-size: 15px;
   font-weight: 700;
   color: #1a3f2d;
-  line-height: 1.45;
+  line-height: 1.5;
+}
+
+/* 예산 사용률 진행률 프로그레스 바 */
+.budget-usage-progress-container {
+  margin-bottom: 20px;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(218, 230, 221, 0.7);
+}
+
+.progress-labels-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: #516d5d;
+  margin-bottom: 6px;
+}
+
+.budget-progress-track {
+  height: 10px;
+  background: #e2ede5;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+}
+
+.budget-progress-bar-spent {
+  background: #258252;
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+.budget-progress-bar-projected {
+  background: #68c08f;
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+.budget-progress-bar-projected.bar-exceeded {
+  background: #dc2626;
 }
 
 .risk-stats-grid {
@@ -430,6 +475,7 @@
 
 .text-red { color: #dc2626 !important; }
 .text-green { color: #258252 !important; }
+.fw-bold { font-weight: 800 !important; }
 
 /* 세그먼트 컨트롤 */
 .tab-control-header {
@@ -511,6 +557,20 @@
 .panel-header-tip {
   font-size: 12px;
   color: #7b9485;
+}
+
+.panel-risk-summary-text {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #2d5540;
+  line-height: 1.4;
+}
+
+.risk-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 /* ========================================================
@@ -671,11 +731,11 @@
 }
 
 /* ========================================================
-   7. Cost Driver 카드 & 랭킹
+   7. Cost Driver & MENU-009 메뉴 가격 위험도 스타일
    ======================================================== */
 .driver-cards-masonry {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -688,6 +748,9 @@
   box-shadow: 0 10px 26px rgba(44, 92, 62, 0.05);
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .driver-card:hover {
@@ -706,7 +769,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
 }
 
 .driver-menu-title {
@@ -724,18 +786,105 @@
   color: #dc2626;
 }
 
+/* MENU-009 위험 점수 박스 */
+.menu-risk-score-box {
+  background: #f4faf6;
+  border: 1px solid #e1efe6;
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.risk-score-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.risk-score-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #557262;
+}
+
+.risk-badge-mini {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.risk-score-num {
+  font-size: 11px;
+  color: #234633;
+}
+
+.risk-score-num strong {
+  font-size: 13px;
+}
+
+.risk-score-bar-track {
+  height: 6px;
+  background: #e0ece4;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.risk-score-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.risk-score-bar-fill.safe {
+  background: #258252;
+}
+
+.risk-score-bar-fill.caution {
+  background: #f59e0b;
+}
+
+.risk-score-bar-fill.warning {
+  background: #dc2626;
+}
+
+.risk-level-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.risk-level-badge.safe {
+  background: #eaf7ef;
+  color: #258252;
+}
+
+.risk-level-badge.caution {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.risk-level-badge.warning {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
 .driver-top-box {
   background: #f7faf8;
-  border-radius: 12px;
-  padding: 10px 14px;
+  border-radius: 10px;
+  padding: 8px 12px;
 }
 
 .driver-top-label {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   color: #b91c1c;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .driver-top-detail .top-name {
@@ -753,7 +902,7 @@
 }
 
 .safe-text {
-  font-size: 12px;
+  font-size: 11px;
   color: #258252;
   font-weight: 700;
 }
@@ -789,6 +938,31 @@
   border-radius: 4px;
 }
 
+.risk-reason-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.risk-reason-pill.safe {
+  background: #eaf7ef;
+  color: #258252;
+}
+
+.risk-reason-pill.caution {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.risk-reason-pill.warning {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
 /* ========================================================
    8. 2주간 식단 & 월간 시뮬레이션 (COST-012, 013, 014)
    ======================================================== */
@@ -817,9 +991,21 @@
   color: #173f2d;
 }
 
+.monthly-meta-sub {
+  font-size: 12px;
+  color: #72877b;
+  font-weight: 600;
+  display: block;
+  margin-top: 4px;
+}
+
 .monthly-total-highlight {
   font-size: 14px;
   color: #556b5d;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .monthly-total-highlight strong {
@@ -827,9 +1013,17 @@
   color: #20784a;
 }
 
+.monthly-budget-rate {
+  font-size: 12px;
+  color: #4a6355;
+  background: #eaf5ee;
+  padding: 3px 8px;
+  border-radius: 8px;
+}
+
 .weekly-breakdown-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 12px;
 }
 
@@ -844,22 +1038,123 @@
 }
 
 .wk-num {
-  font-size: 12px;
-  font-weight: 700;
-  color: #72877b;
+  font-size: 13px;
+  font-weight: 800;
+  color: #173f2d;
+}
+
+.wk-range {
+  font-size: 10px;
+  color: #8c9f93;
 }
 
 .wk-cost {
   font-size: 18px;
   font-weight: 800;
-  color: #173f2d;
+  color: #20784a;
 }
 
 .wk-meal-count {
   font-size: 11px;
-  color: #90a396;
+  color: #6e8176;
 }
 
+/* 주간 7일 일자별 식재료비 분석 그리드 (COST-012) */
+.weekly-days-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 18px 22px;
+}
+
+.day-cost-card {
+  background: #f9fbf9;
+  border: 1px solid #e2ece5;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.day-cost-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eaf2ec;
+  padding-bottom: 4px;
+}
+
+.day-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: #20784a;
+}
+
+.day-date {
+  font-size: 10px;
+  color: #8fa196;
+}
+
+.day-cost-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.day-cost-total strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: #173f2d;
+}
+
+.day-cost-total span {
+  font-size: 11px;
+  color: #72877b;
+}
+
+.day-meals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.day-meal-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid #eef4f0;
+  font-size: 11px;
+}
+
+.meal-slot-tag {
+  font-weight: 800;
+  color: #287b50;
+  font-size: 10px;
+}
+
+.meal-chip-cost {
+  font-weight: 700;
+  color: #1a3f2d;
+}
+
+.day-meal-chip small {
+  font-size: 9px;
+  color: #8c9f93;
+}
+
+.meal-empty-text {
+  font-size: 11px;
+  color: #a0b3a7;
+  text-align: center;
+  padding: 6px 0;
+}
+
+/* 이번 주 / 다음 주 2열 레이아웃 */
 .schedule-two-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -907,6 +1202,8 @@
   font-size: 11px;
   color: #72877b;
   font-weight: 700;
+  display: block;
+  margin-top: 2px;
 }
 
 .pane-cost {
@@ -961,10 +1258,21 @@
   color: #173f2d;
 }
 
+.plan-cost-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
 .plan-price-text {
   font-size: 14px;
   font-weight: 800;
   color: #20784a;
+}
+
+.plan-per-person {
+  font-size: 10px;
+  color: #7a8e82;
 }
 
 /* ========================================================

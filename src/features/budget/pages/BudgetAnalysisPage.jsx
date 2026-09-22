@@ -9,6 +9,8 @@ import {
   getMenuCostComparison,
   getAllMenuCostDrivers,
   getMenuCostDrivers,
+  getMenuRisk,
+  getAllMenuRisks,
   getBudgetRisk,
   getWeeklyMealPlanCost,
   getMonthlyMealPlanCost,
@@ -71,10 +73,24 @@ const checkIsRisk = (risk) => {
   return Number(risk.projectedRemainingBudget ?? 0) < 0;
 };
 
+/**
+ * 주어진 일자가 속한 주의 월요일(YYYY-MM-DD)을 반환하는 헬퍼 함수
+ */
+const getMondayOfWeek = (dateStr) => {
+  if (!dateStr) return '2026-09-14';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const day = date.getDay(); // 0: 일요일, 1: 월요일, ...
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(date.setDate(diff));
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${monday.getFullYear()}-${pad(monday.getMonth() + 1)}-${pad(monday.getDate())}`;
+};
+
 export default function BudgetAnalysisPage({ user, onLogout }) {
   const navigate = useNavigate();
 
-  // 로그인 사용자 및 로그아웃 자체 처리 (App.jsx의 prop이 없어도 독립 동작)
+  // 로그인 사용자 및 로그아웃 자체 처리
   const [currentUser, setCurrentUser] = useState(() => user || getStoredUser());
   const handleLogout = () => {
     if (onLogout) {
@@ -93,7 +109,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
   const [filterBaseDate, setFilterBaseDate] = useState('2026-09-17');
   const [facilityId] = useState(1);
 
-  // 2. 적용된 분석 기준 파라미터 상태 (API 호출 및 결과 표출 기준)
+  // 2. 적용된 분석 기준 파라미터 상태
   const [appliedParams, setAppliedParams] = useState({
     mealCount: 100,
     targetCost: 2500,
@@ -109,16 +125,18 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
   const [menuCosts, setMenuCosts] = useState([]);
   const [comparisons, setComparisons] = useState([]);
   const [drivers, setDrivers] = useState([]);
-  const [budgetRisk, setBudgetRisk] = useState(null);
-  const [budgetUsage, setBudgetUsage] = useState(null); // GET /api/cost/budget-usage (COST-014)
+  const [menuRisks, setMenuRisks] = useState([]);           // GET /api/cost/menus/risk (MENU-009)
+  const [budgetRisk, setBudgetRisk] = useState(null);       // GET /api/cost/budget-risk (BUDG-002)
+  const [budgetUsage, setBudgetUsage] = useState(null);     // GET /api/cost/budget-usage (COST-014)
   const [monthlyPlanCost, setMonthlyPlanCost] = useState(null); // GET /api/cost/monthly-plan-cost (COST-013)
-  const [weeklyPlanCost, setWeeklyPlanCost] = useState(null); // GET /api/cost/weekly-plan-cost (COST-012)
+  const [weeklyPlanCost, setWeeklyPlanCost] = useState(null);   // GET /api/cost/weekly-plan-cost (COST-012)
 
   // 단건 상세 선택 상태
   const [selectedMenuId, setSelectedMenuId] = useState(null);
   const [selectedMenuDetail, setSelectedMenuDetail] = useState(null);
   const [selectedComparison, setSelectedComparison] = useState(null);
   const [selectedDriver, setSelectedDriver] = useState(null);
+  const [selectedMenuRisk, setSelectedMenuRisk] = useState(null); // GET /api/cost/menus/{menuId}/risk (MENU-009)
 
   // 로딩 & 에러 상태
   const [loading, setLoading] = useState(true);
@@ -149,6 +167,12 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
 
         const driverData = await getMenuCostDrivers(menuId, { targetDate: tDate });
         setSelectedDriver(driverData);
+
+        const riskData = await getMenuRisk(menuId, { targetDate: tDate }).catch((e) => {
+          console.warn(`[getMenuRisk #${menuId}] 실패:`, e);
+          return null;
+        });
+        setSelectedMenuRisk(riskData);
       } catch (err) {
         console.error(`[메뉴 #${menuId} 상세 조회 실패]:`, err);
       } finally {
@@ -163,11 +187,14 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
       setLoading(true);
       setError(null);
       const currentYearMonth = bDate ? bDate.slice(0, 7) : '2026-09';
+      const weekStartDate = getMondayOfWeek(bDate);
+
       try {
         const [
           costData,
           compData,
           driverData,
+          riskListData,
           riskData,
           usageData,
           monthlyData,
@@ -178,6 +205,10 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
             : getAllFutureMenuCosts({ targetDate: tDate, mealCount: count, targetCost: target }),
           getAllMenuCostComparisons({ targetDate: tDate, mealCount: count }),
           getAllMenuCostDrivers({ targetDate: tDate }),
+          getAllMenuRisks({ targetDate: tDate }).catch((e) => {
+            console.warn('[getAllMenuRisks] 실패:', e);
+            return [];
+          }),
           getBudgetRisk({ facilityId: facId, baseDate: bDate }).catch((e) => {
             console.warn('[getBudgetRisk] 실패:', e);
             return null;
@@ -190,7 +221,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
             console.warn('[getMonthlyMealPlanCost] 실패:', e);
             return null;
           }),
-          getWeeklyMealPlanCost({ facilityId: facId, startDate: bDate }).catch((e) => {
+          getWeeklyMealPlanCost({ facilityId: facId, startDate: weekStartDate }).catch((e) => {
             console.warn('[getWeeklyMealPlanCost] 실패:', e);
             return null;
           }),
@@ -199,6 +230,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
         setMenuCosts(costData || []);
         setComparisons(compData || []);
         setDrivers(driverData || []);
+        setMenuRisks(riskListData || []);
         setBudgetRisk(riskData);
         setBudgetUsage(usageData);
         setMonthlyPlanCost(monthlyData);
@@ -213,6 +245,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
           setSelectedMenuDetail(null);
           setSelectedComparison(null);
           setSelectedDriver(null);
+          setSelectedMenuRisk(null);
         }
       } catch (err) {
         console.error('[원가 API 일괄 조회 실패]:', err);
@@ -242,7 +275,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     return () => window.clearTimeout(timer);
   }, [fetchAllData, appliedParams, facilityId, costMode]);
 
-  // [조건 적용] 버튼 클릭 핸들러 (KAMIS/원가 API 명시적 트리거)
+  // [조건 적용] 버튼 클릭 핸들러
   const handleApplyFilters = () => {
     const nextParams = {
       mealCount: filterMealCount,
@@ -290,6 +323,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     return `${Math.round(Number(val)).toLocaleString()}원`;
   };
 
+  // 메뉴 원가 현황 서머리 계산
   const summary = useMemo(() => {
     if (!menuCosts || menuCosts.length === 0) {
       return { totalCurrentCost: 0, totalTargetCost: 0, totalExceeded: 0, exceededCount: 0 };
@@ -308,9 +342,35 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     return { totalCurrentCost, totalTargetCost, totalExceeded, exceededCount };
   }, [menuCosts, appliedParams.targetCost, appliedParams.mealCount]);
 
+  // 주차 날짜 범위 계산 헬퍼
+  const getWeekRangeLabel = (details) => {
+    if (!details || details.length === 0) return '';
+    const dates = details.map((d) => d.planDate).sort();
+    return `${dates[0]} ~ ${dates[dates.length - 1]}`;
+  };
+
+  // 예산 위험 상태 클래스
+  const getRiskStatusClass = () => {
+    const level = budgetRisk?.riskLevel || budgetUsage?.status || 'SAFE';
+    if (level === 'WARNING' || level === 'DANGER' || level === 'EXCEEDED') return 'danger';
+    if (level === 'CAUTION') return 'warning';
+    return 'stable';
+  };
+
+  // 메뉴 위험도 등급 태그 헬퍼
+  const renderRiskBadge = (riskLevel) => {
+    if (riskLevel === 'WARNING') {
+      return <span className="risk-level-badge warning">🚨 경고 (WARNING)</span>;
+    }
+    if (riskLevel === 'CAUTION') {
+      return <span className="risk-level-badge caution">⚠️ 주의 (CAUTION)</span>;
+    }
+    return <span className="risk-level-badge safe">✅ 안전 (SAFE)</span>;
+  };
+
   return (
     <div className="budget-root-layout">
-      {/* 1. 메인 화면과 동일한 공통 GNB 헤더 */}
+      {/* 1. 메인 공통 GNB 헤더 */}
       <header className="landing-header">
         <Link className="landing-logo" to="/" aria-label="MealFit 홈">
           <span className="logo-leaf" aria-hidden="true">◆</span>
@@ -351,7 +411,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
               <div>
                 <h1>원가와 <em>예산 분석</em></h1>
                 <p className="budget-intro-desc">
-                  KAMIS 실시간 시세와 7일 가격 예측 모델을 기반으로 메뉴별 원가 변동과 월간 예산 위험을 정밀 진단합니다.
+                  KAMIS 실시간 시세와 7일 가격 예측 모델을 기반으로 메뉴별 원가 변동, 식재료 가격 위험 및 월간 예산 위험을 정밀 진단합니다.
                 </p>
               </div>
               <div className="budget-meta-pill">
@@ -363,7 +423,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
               </div>
             </div>
 
-            {/* 조건 필터 카드 (KAMIS 조건 설정 + 조건 적용 버튼) */}
+            {/* 조건 필터 카드 */}
             <div className="budget-filter-card">
               <div className="filter-item">
                 <span className="filter-label">식수 인원</span>
@@ -412,7 +472,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                 />
               </div>
 
-              {/* KAMIS 연동 조건 적용 버튼 */}
+              {/* 조건 적용 버튼 */}
               <button
                 type="button"
                 className="filter-apply-btn"
@@ -426,48 +486,84 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
 
           {/* 3. 예산 위험 및 사용률 분석 알림 카드 (BUDG-002 & COST-014 연동) */}
           {(budgetRisk || budgetUsage) && (
-            <section className={`budget-risk-card-hero ${budgetRisk?.riskLevel?.toLowerCase() || 'stable'}`}>
+            <section className={`budget-risk-card-hero ${getRiskStatusClass()}`}>
               <div className="risk-card-top">
                 <div className="risk-badge-group">
                   <span className="risk-level-tag">
-                    {budgetRisk?.riskLevel === 'DANGER'
-                      ? '🚨 예산 초과 위험 (DANGER)'
-                      : budgetRisk?.riskLevel === 'WARNING'
-                      ? '⚠️ 예산 주의 (WARNING)'
-                      : '✅ 예산 안정 (STABLE)'}
+                    {budgetRisk?.riskLevel === 'WARNING' || budgetUsage?.status === 'EXCEEDED' || budgetUsage?.status === 'WARNING'
+                      ? '🚨 예산 초과 위험 (WARNING)'
+                      : budgetRisk?.riskLevel === 'CAUTION' || budgetUsage?.status === 'CAUTION'
+                      ? '⚠️ 예산 주의 (CAUTION)'
+                      : '✅ 예산 안정 (SAFE)'}
                   </span>
                   <span className="risk-facility-info">
-                    {budgetRisk?.facilityName || '시설 1'} · {budgetRisk?.budgetMonth || appliedParams.baseDate.slice(0, 7)} 기준
+                    {budgetRisk?.facilityName || budgetUsage?.facilityName || '시설 1'} · {budgetRisk?.budgetMonth || budgetUsage?.yearMonth || appliedParams.baseDate.slice(0, 7)} 기준
                   </span>
                 </div>
                 {budgetUsage && (
                   <div className="budget-usage-pill">
-                    <span>예산 사용률: </span>
-                    <strong className={Number(budgetUsage.usageRate) > 100 ? 'text-red' : 'text-green'}>
-                      {budgetUsage.usageRate}%
+                    <span>현재 집행률: </span>
+                    <strong className="text-green">
+                      {budgetUsage.currentUsageRate}%
+                    </strong>
+                    <span className="pill-divider" />
+                    <span>최종 예상 소진율: </span>
+                    <strong className={Number(budgetUsage.expectedUsageRate) > 100 ? 'text-red' : 'text-green'}>
+                      {budgetUsage.expectedUsageRate}%
                     </strong>
                   </div>
                 )}
               </div>
 
-              <p className="risk-message-text">{budgetRisk?.warningMessage || budgetUsage?.statusMessage}</p>
+              {/* 상태 메시지 및 경고 안내 */}
+              <p className="risk-message-text">
+                {budgetRisk?.warningMessage || budgetUsage?.statusMessage}
+              </p>
 
+              {/* 예산 사용률 진행률 게이지 바 */}
+              {budgetUsage && (
+                <div className="budget-usage-progress-container">
+                  <div className="progress-labels-row">
+                    <span>기집행: {formatWon(budgetUsage.actualSpentCost)} ({budgetUsage.currentUsageRate}%)</span>
+                    <span>총 예상: {formatWon(budgetUsage.totalExpectedCost)} / {formatWon(budgetUsage.monthlyBudget)}</span>
+                  </div>
+                  <div className="budget-progress-track">
+                    <div
+                      className="budget-progress-bar-spent"
+                      style={{ width: `${Math.min(Number(budgetUsage.currentUsageRate) || 0, 100)}%` }}
+                      title={`현재 집행: ${budgetUsage.currentUsageRate}%`}
+                    />
+                    <div
+                      className={`budget-progress-bar-projected ${Number(budgetUsage.expectedUsageRate) > 100 ? 'bar-exceeded' : ''}`}
+                      style={{
+                        width: `${Math.min(
+                          Math.max((Number(budgetUsage.expectedUsageRate) || 0) - (Number(budgetUsage.currentUsageRate) || 0), 0),
+                          100 - Math.min(Number(budgetUsage.currentUsageRate) || 0, 100)
+                        )}%`,
+                      }}
+                      title={`이후 잔여 예상: ${formatWon(budgetUsage.projectedRemainingCost)}`}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 4대 주요 재무 지표 그리드 */}
               <div className="risk-stats-grid">
                 <div className="risk-stat-box">
                   <span className="stat-label">월간 총 예산</span>
-                  <strong className="stat-val">{formatCurrency(budgetRisk?.monthlyBudget || budgetUsage?.budgetAmount)}</strong>
+                  <strong className="stat-val">{formatCurrency(budgetRisk?.monthlyBudget || budgetUsage?.monthlyBudget)}</strong>
                 </div>
                 <div className="risk-stat-box">
                   <span className="stat-label">현재 기집행액</span>
-                  <strong className="stat-val">{formatCurrency(budgetRisk?.currentSpentCost || budgetUsage?.spentAmount)}</strong>
+                  <strong className="stat-val">{formatCurrency(budgetRisk?.currentSpentCost || budgetUsage?.actualSpentCost)}</strong>
                 </div>
                 <div className="risk-stat-box">
-                  <span className="stat-label">2주간 예상 총비용</span>
+                  <span className="stat-label">2주간 예상 비용</span>
                   <strong className="stat-val highlight">{formatCurrency(budgetRisk?.twoWeeksTotalExpectedCost)}</strong>
                 </div>
                 <div className="risk-stat-box">
-                  <span className="stat-label">시뮬레이션 잔여 예산</span>
-                  <strong className={`stat-val ${checkIsRisk(budgetRisk) ? 'val-danger' : 'val-success'}`}>
+                  <span className="stat-label">최종 시뮬레이션 잔여 예산</span>
+                  <strong className={`stat-val ${checkIsRisk(budgetRisk) || budgetUsage?.isExceeded ? 'val-danger' : 'val-success'}`}>
                     {formatCurrency(budgetRisk?.projectedRemainingBudget || budgetUsage?.remainingBudget)}
                   </strong>
                 </div>
@@ -496,7 +592,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
               className={`nav-tab-item ${activeTab === 'driver' ? 'active' : ''}`}
               onClick={() => setActiveTab('driver')}
             >
-              🔥 원가 상승 요인 (Cost Driver)
+              🔥 원가 상승 & 위험도 진단
             </button>
             <button
               type="button"
@@ -550,7 +646,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                         className={`segment-btn ${costMode === 'FUTURE' ? 'active' : ''}`}
                         onClick={() => setCostMode('FUTURE')}
                       >
-                        미래 예측가 (COST-005, {appliedParams.targetDate})
+                        미래 예측가 (COST-002, {appliedParams.targetDate})
                       </button>
                     </div>
                     <span className="control-caption">
@@ -808,15 +904,20 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
               )}
 
               {/* ========================================================
-                  [탭 3] 🔥 원가 상승 요인 (Cost Driver)
+                  [탭 3] 🔥 원가 상승 요인 & 메뉴 가격 위험도 (MENU-009)
                  ======================================================== */}
               {activeTab === 'driver' && (
                 <div className="tab-fade-in">
+                  {/* 메뉴별 위험도 진단 카드 그리드 */}
                   <div className="driver-cards-masonry">
                     {drivers.map((drv) => {
                       const isSelected = selectedMenuId === drv.menuId;
                       const top = drv.topDriver;
                       const isTopIncrease = checkIsCostIncrease(top);
+                      const riskInfo = menuRisks.find((r) => r.menuId === drv.menuId);
+                      const riskLevel = riskInfo?.riskLevel || (Number(drv.totalIncreaseRate) >= 15 ? 'WARNING' : Number(drv.totalIncreaseRate) >= 7 ? 'CAUTION' : 'SAFE');
+                      const riskScore = riskInfo?.riskScore ?? (riskLevel === 'WARNING' ? 85 : riskLevel === 'CAUTION' ? 55 : 20);
+
                       return (
                         <div
                           key={drv.menuId}
@@ -829,6 +930,24 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                             <span className="driver-rate-tag">▲ {drv.totalIncreaseRate}%</span>
                           </div>
 
+                          {/* MENU-009 종합 위험도 점수 & 등급 바 */}
+                          <div className="menu-risk-score-box">
+                            <div className="risk-score-header">
+                              <span className="risk-score-label">종합 가격 위험도</span>
+                              <div className="risk-badge-mini">
+                                {renderRiskBadge(riskLevel)}
+                                <span className="risk-score-num"><strong>{riskScore}</strong>점</span>
+                              </div>
+                            </div>
+                            <div className="risk-score-bar-track">
+                              <div
+                                className={`risk-score-bar-fill ${riskLevel.toLowerCase()}`}
+                                style={{ width: `${Math.min(riskScore, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Top 1 인상 주도 재료 */}
                           <div className="driver-top-box">
                             <span className="driver-top-label">🚨 최대 인상 주도 재료 (Top 1)</span>
                             {top && isTopIncrease ? (
@@ -848,13 +967,24 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                     })}
                   </div>
 
-                  {selectedDriver && (
+                  {/* 선택된 메뉴의 MENU-009 종합 진단 요약 및 식재료별 위험 분석 테이블 */}
+                  {(selectedMenuRisk || selectedDriver) && (
                     <div className="budget-glass-panel">
                       <div className="panel-header-bar">
-                        <h3>[원가 상승 기여도 전체 순위] {selectedDriver.menuName}</h3>
-                        <span className="formula-sum-badge">
-                          메뉴 총 인상액: <strong className="text-red">+{formatWon(selectedDriver.totalCostDifference)}</strong>
-                        </span>
+                        <div>
+                          <h3>[메뉴 가격 위험도 종합 진단] {selectedMenuRisk?.menuName || selectedDriver?.menuName}</h3>
+                          {selectedMenuRisk?.riskSummary && (
+                            <p className="panel-risk-summary-text">
+                              💡 <strong>진단 요약:</strong> {selectedMenuRisk.riskSummary}
+                            </p>
+                          )}
+                        </div>
+                        <div className="risk-header-actions">
+                          {selectedMenuRisk && renderRiskBadge(selectedMenuRisk.riskLevel)}
+                          <span className="formula-sum-badge">
+                            메뉴 총 인상액: <strong className="text-red">+{formatWon(selectedMenuRisk?.costDifference || selectedDriver?.totalCostDifference)}</strong>
+                          </span>
+                        </div>
                       </div>
 
                       <div className="brand-table-wrapper">
@@ -868,15 +998,20 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                               <th>단가 변동률</th>
                               <th>원가 상승액</th>
                               <th>기여율 (%)</th>
+                              <th>위험도 / 원인</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {selectedDriver.rankedDrivers?.map((d) => {
+                            {(selectedMenuRisk?.riskIngredients || selectedDriver?.rankedDrivers)?.map((d, idx) => {
+                              const rank = d.rank || idx + 1;
                               const isCostUp = checkIsCostIncrease(d);
+                              const ingRiskLevel = d.ingredientRiskLevel || (isCostUp && Number(d.unitPriceIncreaseRate) >= 15 ? 'WARNING' : isCostUp && Number(d.unitPriceIncreaseRate) >= 5 ? 'CAUTION' : 'SAFE');
+                              const riskReason = d.riskReason || (isCostUp ? `단가 ${d.unitPriceIncreaseRate}% 상승 예상` : '가격 안정');
+
                               return (
-                                <tr key={d.ingredientId} className={d.rank === 1 && isCostUp ? 'row-top-driver' : ''}>
+                                <tr key={d.ingredientId} className={rank === 1 && isCostUp ? 'row-top-driver' : ''}>
                                   <td>
-                                    <span className={`rank-pill ${d.rank === 1 ? 'rank-1' : ''}`}>#{d.rank}</span>
+                                    <span className={`rank-pill ${rank === 1 ? 'rank-1' : ''}`}>#{rank}</span>
                                   </td>
                                   <td><strong>{d.ingredientName}</strong></td>
                                   <td>{Number(d.quantity).toLocaleString()}g</td>
@@ -896,6 +1031,12 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                                       <span>{d.contributionRate}%</span>
                                     </div>
                                   </td>
+                                  <td>
+                                    <span className={`risk-reason-pill ${ingRiskLevel.toLowerCase()}`}>
+                                      {ingRiskLevel === 'WARNING' ? '🚨 ' : ingRiskLevel === 'CAUTION' ? '⚠️ ' : '✅ '}
+                                      {riskReason}
+                                    </span>
+                                  </td>
                                 </tr>
                               );
                             })}
@@ -908,54 +1049,114 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
               )}
 
               {/* ========================================================
-                  [탭 4] 📅 2주간 식단 & 월간 시뮬레이션 (COST-012, 013, 014 연동)
+                  [탭 4] 📅 2주간 식단 & 월간 시뮬레이션 (COST-012, 013, 014, BUDG-002)
                  ======================================================== */}
               {activeTab === 'schedule' && (
                 <div className="tab-fade-in">
-                  {/* 월간 식단 식재료비 요약 카드 (COST-013) */}
+                  {/* 1. 월간 식단 식재료비 요약 카드 (COST-013) */}
                   {monthlyPlanCost && (
                     <div className="monthly-cost-summary-card">
                       <div className="monthly-cost-header">
-                        <h4>📅 {monthlyPlanCost.yearMonth} 월간 총 예상 식재료비 (COST-013)</h4>
-                        <span className="monthly-total-highlight">
-                          총 예상액: <strong>{formatCurrency(monthlyPlanCost.monthlyTotalCost)}</strong>
-                        </span>
+                        <div>
+                          <h4>📅 {monthlyPlanCost.yearMonth} 월간 총 예상 식재료비 (COST-013)</h4>
+                          <span className="monthly-meta-sub">
+                            총 식수 {monthlyPlanCost.totalMonthlyMealCount?.toLocaleString()}명 · 1인 평균 {formatWon(monthlyPlanCost.averageCostPerPerson)}
+                          </span>
+                        </div>
+                        <div className="monthly-total-highlight">
+                          총 예상액: <strong>{formatCurrency(monthlyPlanCost.totalMonthlyExpectedCost)}</strong>
+                          <span className="monthly-budget-rate">
+                            (예산 대비 <strong>{monthlyPlanCost.budgetUsageRate}%</strong> 소진)
+                          </span>
+                        </div>
                       </div>
+
+                      {/* 주차별 예상 비용 그리드 */}
                       <div className="weekly-breakdown-grid">
                         {monthlyPlanCost.weeklyCosts?.map((wk) => (
-                          <div key={wk.weekNumber} className="weekly-cost-item">
-                            <span className="wk-num">{wk.weekNumber}주차 ({wk.weekRange})</span>
+                          <div key={wk.weekOfMonth || wk.weekLabel} className="weekly-cost-item">
+                            <span className="wk-num">{wk.weekLabel}</span>
+                            <span className="wk-range">{wk.startDate} ~ {wk.endDate}</span>
                             <strong className="wk-cost">{formatCurrency(wk.weeklyTotalCost)}</strong>
-                            <span className="wk-meal-count">{wk.mealPlanCount}개 식단 편성</span>
+                            <span className="wk-meal-count">
+                              식수 {wk.weeklyMealCount?.toLocaleString()}명 (1인 {formatWon(wk.averageCostPerPerson)})
+                            </span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* 이번 주 / 다음 주 2주간 일자별 식단 상세 (BUDG-002 & COST-012) */}
+                  {/* 2. 주간 7일간 요일별 식단 상세 뷰 (COST-012) */}
+                  {weeklyPlanCost && weeklyPlanCost.dailyCosts && (
+                    <div className="budget-glass-panel">
+                      <div className="panel-header-bar">
+                        <div>
+                          <h3>📅 주간 7일 일자별 식재료비 분석 (COST-012)</h3>
+                          <p className="panel-desc">
+                            기간: {weeklyPlanCost.startDate} ~ {weeklyPlanCost.endDate} · 7일간 총 {formatCurrency(weeklyPlanCost.totalExpectedCost)} (1인 평균 {formatWon(weeklyPlanCost.averageCostPerPerson)})
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="weekly-days-grid">
+                        {weeklyPlanCost.dailyCosts.map((day) => (
+                          <div key={day.date} className="day-cost-card">
+                            <div className="day-cost-head">
+                              <span className="day-name">{day.dayOfWeek}</span>
+                              <span className="day-date">{day.date}</span>
+                            </div>
+                            <div className="day-cost-total">
+                              <strong>{formatWon(day.dailyTotalCost)}</strong>
+                              <span>{day.dailyMealCount}명</span>
+                            </div>
+                            <div className="day-meals-list">
+                              {day.meals && day.meals.length > 0 ? (
+                                day.meals.map((meal, mIdx) => (
+                                  <div key={meal.planId || mIdx} className="day-meal-chip">
+                                    <span className="meal-slot-tag">{meal.mealType}</span>
+                                    <span className="meal-chip-cost">{formatWon(meal.totalMealCost)}</span>
+                                    <small>({formatWon(meal.costPerPerson)}/인)</small>
+                                  </div>
+                                ))
+                              ) : (
+                                <span className="meal-empty-text">편성 식단 없음</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. 이번 주 / 다음 주 2주간 일자별 식단 상세 (BUDG-002) */}
                   {budgetRisk ? (
                     <div className="schedule-two-grid">
                       <div className="schedule-pane">
                         <div className="schedule-pane-head">
-                          <h4>이번 주 편성 식단</h4>
-                          <span className="pane-range">{budgetRisk.thisWeekRange}</span>
+                          <div>
+                            <h4>이번 주 편성 식단</h4>
+                            <span className="pane-range">{getWeekRangeLabel(budgetRisk.thisWeekDetails)}</span>
+                          </div>
                           <span className="pane-cost">{formatCurrency(budgetRisk.thisWeekExpectedCost)}</span>
                         </div>
                         <div className="schedule-items-list">
                           {budgetRisk.thisWeekDetails?.length === 0 ? (
                             <p className="table-empty">이번 주 편성된 식단이 없습니다.</p>
                           ) : (
-                            budgetRisk.thisWeekDetails?.map((plan) => (
-                              <div key={plan.mealPlanId} className="schedule-plan-card">
+                            budgetRisk.thisWeekDetails?.map((plan, idx) => (
+                              <div key={plan.planId || idx} className="schedule-plan-card">
                                 <div className="plan-meta-row">
                                   <span className="plan-date-text">{plan.planDate}</span>
-                                  <span className="plan-slot-badge">{plan.mealSlot || plan.mealType}</span>
+                                  <span className="plan-slot-badge">{plan.mealType}</span>
                                   <span className="plan-count-text">{plan.mealCount}명</span>
                                 </div>
                                 <div className="plan-main-row">
-                                  <strong className="plan-menu-title">{plan.menuName}</strong>
-                                  <span className="plan-price-text">{formatWon(plan.totalCost || plan.totalDailyCost)}</span>
+                                  <strong className="plan-menu-title">식단 #{plan.planId} ({plan.mealType})</strong>
+                                  <div className="plan-cost-group">
+                                    <span className="plan-price-text">{formatWon(plan.totalDailyCost)}</span>
+                                    <small className="plan-per-person">1인 {formatWon(plan.costPerPerson)}</small>
+                                  </div>
                                 </div>
                               </div>
                             ))
@@ -965,24 +1166,29 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
 
                       <div className="schedule-pane next-pane">
                         <div className="schedule-pane-head">
-                          <h4>다음 주 편성 식단 (예측)</h4>
-                          <span className="pane-range">{budgetRisk.nextWeekRange}</span>
+                          <div>
+                            <h4>다음 주 편성 식단 (예측)</h4>
+                            <span className="pane-range">{getWeekRangeLabel(budgetRisk.nextWeekDetails)}</span>
+                          </div>
                           <span className="pane-cost">{formatCurrency(budgetRisk.nextWeekExpectedCost)}</span>
                         </div>
                         <div className="schedule-items-list">
                           {budgetRisk.nextWeekDetails?.length === 0 ? (
                             <p className="table-empty">다음 주 편성된 식단이 없습니다.</p>
                           ) : (
-                            budgetRisk.nextWeekDetails?.map((plan) => (
-                              <div key={plan.mealPlanId} className="schedule-plan-card">
+                            budgetRisk.nextWeekDetails?.map((plan, idx) => (
+                              <div key={plan.planId || idx} className="schedule-plan-card">
                                 <div className="plan-meta-row">
                                   <span className="plan-date-text">{plan.planDate}</span>
-                                  <span className="plan-slot-badge">{plan.mealSlot || plan.mealType}</span>
+                                  <span className="plan-slot-badge">{plan.mealType}</span>
                                   <span className="plan-count-text">{plan.mealCount}명</span>
                                 </div>
                                 <div className="plan-main-row">
-                                  <strong className="plan-menu-title">{plan.menuName}</strong>
-                                  <span className="plan-price-text">{formatWon(plan.totalCost || plan.totalDailyCost)}</span>
+                                  <strong className="plan-menu-title">식단 #{plan.planId} ({plan.mealType})</strong>
+                                  <div className="plan-cost-group">
+                                    <span className="plan-price-text">{formatWon(plan.totalDailyCost)}</span>
+                                    <small className="plan-per-person">1인 {formatWon(plan.costPerPerson)}</small>
+                                  </div>
                                 </div>
                               </div>
                             ))
@@ -1000,7 +1206,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
             </>
           )}
 
-          {/* 5. 하단 액션 버튼 바 (메인 화면 스타일) */}
+          {/* 5. 하단 액션 버튼 바 */}
           <section className="budget-bottom-actions">
             <button
               type="button"
