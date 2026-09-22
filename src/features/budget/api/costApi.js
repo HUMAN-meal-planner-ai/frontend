@@ -221,3 +221,37 @@ export async function getBudgetUsage(params = {}) {
   });
   return data;
 }
+
+/**
+ * 13. 메뉴 구성 주요 식재료의 가격 위험을 종합한 메뉴 위험도 단건을 조회합니다. (MENU-009)
+ * @param {number|string} menuId 메뉴 ID
+ * @param {Object} params
+ * @param {string} [params.targetDate] 예측 기준일 (YYYY-MM-DD)
+ * @returns {Promise<Object>} MenuRiskResponse
+ */
+export async function getMenuRisk(menuId, params = {}) {
+  const { targetDate } = params;
+  const { data } = await api.get(`/api/cost/menus/${menuId}/risk`, {
+    params: {
+      ...(targetDate ? { targetDate } : {}),
+    },
+  });
+  return data;
+}
+
+/**
+ * 14. 전체 메뉴 대상 주요 식재료 가격 위험 종합 메뉴 위험도를 일괄 조회합니다. (MENU-009)
+ * @param {Object} params
+ * @param {string} [params.targetDate] 예측 기준일 (YYYY-MM-DD)
+ * @returns {Promise<Array>} MenuRiskResponse 목록
+ */
+export async function getAllMenuRisks(params = {}) {
+  const { targetDate } = params;
+  const { data } = await api.get('/api/cost/menus/risk', {
+    params: {
+      ...(targetDate ? { targetDate } : {}),
+    },
+  });
+  return data;
+}
+
