@@ -624,3 +624,222 @@
     padding: 24px;
   }
 }
+/* ==================================================
+   메뉴 검색 + 오른쪽 AI 배너 레이아웃
+================================================== */
+
+.menu-content {
+  width: min(1480px, 100%);
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 310px;
+  column-gap: 32px;
+
+  align-items: start;
+}
+
+
+/* 기존 메뉴 영역은 왼쪽 */
+.menu-intro,
+.menu-search-panel,
+.menu-message,
+.menu-results-header,
+.menu-grid,
+.menu-pagination {
+  grid-column: 1;
+}
+
+
+/* ==================================================
+   오른쪽 MEALFIT AI 배너
+================================================== */
+
+.menu-ai-banner {
+  grid-column: 2;
+  grid-row: 1 / span 20;
+
+  position: sticky;
+  top: 105px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  width: 100%;
+  padding: 26px 24px;
+
+  border: 1px solid #dce9df;
+  border-radius: 18px;
+
+  background: #ffffff;
+
+  color: inherit;
+  text-decoration: none;
+
+  box-shadow:
+    0 12px 36px rgba(25, 56, 42, 0.06);
+
+  transition:
+    transform 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.menu-ai-banner:hover {
+  transform: translateY(-3px);
+
+  border-color: #b9dac3;
+
+  box-shadow:
+    0 16px 42px rgba(25, 56, 42, 0.10);
+}
+
+
+/* AI 아이콘 */
+
+.menu-ai-banner-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 48px;
+  height: 48px;
+
+  margin-bottom: 20px;
+
+  border-radius: 13px;
+
+  background: #edf7ef;
+  color: #42a96e;
+
+  font-size: 20px;
+  font-weight: 800;
+}
+
+
+/* 텍스트 */
+
+.menu-ai-banner-content {
+  width: 100%;
+}
+
+.menu-ai-banner-label {
+  margin: 0 0 8px;
+
+  color: #329561;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 1.8px;
+}
+
+.menu-ai-banner-content h2 {
+  margin: 0 0 10px;
+
+  color: #19382a;
+
+  font-size: 20px;
+  font-weight: 800;
+
+  letter-spacing: -0.7px;
+  line-height: 1.4;
+}
+
+.menu-ai-banner-content > p:last-child {
+  margin: 0;
+
+  color: #718779;
+
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+
+/* AI에게 질문하기 버튼 */
+
+.menu-ai-banner-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+
+  margin-top: 24px;
+  padding: 13px 15px;
+
+  border-radius: 10px;
+
+  background: #268451;
+  color: #ffffff;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  transition: background 0.2s;
+}
+
+.menu-ai-banner:hover .menu-ai-banner-action {
+  background: #1b6e41;
+}
+
+.menu-ai-banner-action strong {
+  font-size: 18px;
+}
+
+
+/* ==================================================
+   화면이 좁아지면 다시 아래로 배치
+================================================== */
+
+@media (max-width: 1050px) {
+
+  .menu-content {
+    display: block;
+    width: min(1200px, 100%);
+  }
+
+  .menu-ai-banner {
+    position: static;
+
+    margin-top: 24px;
+
+    flex-direction: row;
+    align-items: center;
+
+    gap: 18px;
+  }
+
+  .menu-ai-banner-icon {
+    flex-shrink: 0;
+
+    margin-bottom: 0;
+  }
+
+  .menu-ai-banner-content {
+    flex: 1;
+  }
+
+  .menu-ai-banner-action {
+    width: auto;
+
+    flex-shrink: 0;
+
+    margin-top: 0;
+
+    gap: 18px;
+  }
+}
+@media (max-width: 620px) {
+
+  .menu-ai-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .menu-ai-banner-action {
+    width: 100%;
+
+    margin-top: 5px;
+  }
+}
