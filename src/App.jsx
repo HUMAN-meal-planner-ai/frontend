@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import api, { clearAuth, getStoredUser, saveAuth } from './api/axios'
 import BudgetAnalysisPage from './features/budget/pages/BudgetAnalysisPage'
@@ -237,7 +237,7 @@ function AppRoutes() {
       <Route path="/setup" element={<ProtectedRoute user={user}><FacilitySetupPage user={user} onAuthenticated={setUser} /></ProtectedRoute>} />
       <Route path="/home" element={<ProtectedRoute user={user}><HomePage user={user} onLogout={logout} /></ProtectedRoute>} />
       <Route path="/menus" element={<ProtectedRoute user={user}><MenuListPage /></ProtectedRoute>} />
-      <Route path="/budget" element={<ProtectedRoute user={user}><BudgetAnalysisPage /></ProtectedRoute>} />
+      <Route path="/budget" element={<ProtectedRoute user={user}><BudgetAnalysisPage user={user} onLogout={logout} /></ProtectedRoute>} />
       <Route path="/admin" element={<AdminRoute user={user}><AdminPage user={user} onLogout={logout} /></AdminRoute>} />
       <Route path="/manager" element={<ManagerRoute user={user}><ManagerPage user={user} onLogout={logout} /></ManagerRoute>} />
       {/* 새로 추가된 주간 식단 화면을 실제 식단 API와 연결합니다. */}
@@ -257,3 +257,4 @@ function App() {
 }
 
 export default App
+
