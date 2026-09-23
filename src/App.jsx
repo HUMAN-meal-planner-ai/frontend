@@ -236,7 +236,12 @@ function AppRoutes() {
 
       {/* 보호 화면: 사용자 정보가 없으면 ProtectedRoute가 로그인 화면으로 이동시킵니다. */}
       <Route path="/setup" element={<ProtectedRoute user={user}><FacilitySetupPage user={user} onAuthenticated={setUser} /></ProtectedRoute>} />
-      <Route path="/home" element={<ProtectedRoute user={user}><HomePage user={user} onLogout={logout} /></ProtectedRoute>} />
+      <Route path="/home" element={
+          <ProtectedRoute user={user}>
+            <HomePage user={user} onLogout={logout} />
+          </ProtectedRoute>
+        } 
+      />
       <Route path="/menus" element={<ProtectedRoute user={user}><MenuListPage /></ProtectedRoute>} />
       <Route path="/budget" element={<ProtectedRoute user={user}><BudgetAnalysisPage /></ProtectedRoute>} />
       <Route path="/admin" element={<AdminRoute user={user}><AdminPage user={user} onLogout={logout} /></AdminRoute>} />
