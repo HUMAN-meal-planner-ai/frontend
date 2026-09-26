@@ -7,7 +7,7 @@ import ManagerPage from './features/manager/pages/ManagerPage'
 import MealPlanPage from './features/mealplan/pages/MealPlanPage'
 import MenuListPage from './features/menu/pages/MenuListPage'
 import LandingPage from './features/landing/pages/LandingPage'
-import FeatureComingSoonPage from './components/common/FeatureComingSoonPage'
+import PriceForecastPage from './features/price/pages/PriceForecastPage'
 import './App.css'
 
 /** 서버의 공통 오류 응답을 사용자용 문장으로 변환합니다. 네트워크 단절도 구분해 안내합니다. */
@@ -250,7 +250,7 @@ function AppRoutes() {
       <Route path="/meal-plans" element={<ProtectedRoute user={user}><MealPlanPage onLogout={logout} /></ProtectedRoute>} />
 
       {/* 아직 실제 기능 화면이 없는 주소는 공통 준비 중 화면을 사용합니다. */}
-      <Route path="/prices" element={<ProtectedRoute user={user}><FeatureComingSoonPage eyebrow="PRICE FORECAST" title="식재료 가격 예측" description="가격 수집과 예측 API 연결 후 품목별 7일 전망을 확인할 수 있습니다." /></ProtectedRoute>} />
+      <Route path="/prices" element={<ProtectedRoute user={user}><PriceForecastPage /></ProtectedRoute>} />
 
       {/* 정의되지 않은 주소로 접근하면 공개 첫 화면으로 되돌립니다. */}
       <Route path="*" element={<Navigate to="/" replace />} />
