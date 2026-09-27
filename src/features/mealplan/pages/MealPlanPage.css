@@ -1,0 +1,46 @@
+.meal-plan-page { min-height: 100vh; background: #f5f9f6; }
+.meal-plan-header { display: flex; align-items: center; justify-content: space-between; height: 72px; padding: 0 6vw; border-bottom: 1px solid #dfe8e2; background: #fff; }
+.meal-plan-header strong { color: #173728; font: 700 22px 'DM Sans', sans-serif; }
+.meal-plan-header strong span { color: #2f9b64; }
+.text-button { border: 0; padding: 8px 0; color: #5e7669; background: none; font-weight: 700; }
+.meal-plan-content { max-width: 1100px; margin: auto; padding: 68px 32px; }
+.meal-plan-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; }
+.meal-plan-heading h1 { margin: 0 0 12px; color: #173728; font-size: 42px; letter-spacing: -1.5px; }
+.meal-plan-heading p:not(.eyebrow) { margin: 0; color: var(--muted); }
+.menu-count { padding: 9px 13px; border-radius: 20px; color: #27784e; background: #eaf7ef; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.meal-plan-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 38px; padding: 24px; border: 1px solid #dfe9e2; border-radius: 16px; background: #fff; }
+.meal-plan-controls label { display: flex; flex-direction: column; gap: 8px; color: #2c4639; font-size: 12px; font-weight: 800; }
+.meal-plan-controls input { height: 46px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; color: #203e2f; background: #fff; }
+.meal-plan-actions { display: flex; grid-column: 1 / -1; gap: 10px; }
+.meal-plan-actions button { min-height: 48px; margin-top: 0; padding: 0 18px; }
+.meal-plan-actions .secondary-button { flex: 1; }
+.meal-plan-calendar { margin-top: 32px; padding: 20px; border: 1px solid #dfe9e2; border-radius: 18px; background: #fff; }
+.calendar-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 18px; padding: 6px 8px 18px; border-bottom: 1px solid #e4ece5; }
+.calendar-header h2 { margin: 0; color: #173728; font-size: 22px; text-align: center; letter-spacing: -0.5px; }
+.calendar-month-button { border: 0; padding: 8px 0; color: #315241; background: transparent; font-size: 13px; font-weight: 700; text-align: left; }
+.calendar-month-button:last-child { text-align: right; }
+.month-day-labels { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)) 78px; gap: 8px; margin-top: 18px; padding: 0 8px; color: #6f8378; font-size: 12px; font-weight: 800; text-align: center; }
+.month-week-row { display: grid; grid-template-columns: minmax(0, 1fr) 78px; gap: 8px; align-items: center; margin-top: 8px; }
+.month-day-cards { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.month-day-card { min-height: 100px; display: flex; flex-direction: column; gap: 5px; overflow: hidden; padding: 10px 9px; border: 1px solid #d8e3db; border-radius: 8px; color: #213d32; background: #f8fbf9; }
+.month-day-card strong { margin-bottom: 2px; color: #173728; font-size: 16px; }
+.month-day-card span { overflow: hidden; color: #5d756a; font-size: 10px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.month-day-card.outside-month { opacity: .45; background: #f1f5f2; }
+.week-query-button { border: 1px solid #68b483; border-radius: 8px; padding: 9px 4px; color: #27784e; background: #f7fcf8; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.week-query-button:hover { background: #eaf7ef; }
+.calendar-caption { margin: 20px 8px 2px; color: #6f8378; font-size: 12px; line-height: 1.5; }
+
+@media (max-width: 900px) {
+  .meal-plan-content { padding: 40px 22px 80px; }
+  .meal-plan-heading { flex-direction: column; align-items: flex-start; }
+  .meal-plan-controls { grid-template-columns: 1fr; }
+  .meal-plan-calendar { overflow-x: auto; }
+  .calendar-header, .month-day-labels, .month-week-row { min-width: 760px; }
+}
+
+@media (max-width: 560px) {
+  .meal-plan-content { padding: 28px 14px 60px; }
+  .meal-plan-heading h1 { font-size: 34px; }
+  .meal-plan-actions { flex-wrap: wrap; }
+  .meal-plan-actions button { flex: 1 1 100%; }
+}

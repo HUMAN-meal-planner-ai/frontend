@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import api, { clearAuth, getStoredUser, saveAuth } from './api/axios'
 import BudgetAnalysisPage from './features/budget/pages/BudgetAnalysisPage'
@@ -7,7 +7,7 @@ import ManagerPage from './features/manager/pages/ManagerPage'
 import MealPlanPage from './features/mealplan/pages/MealPlanPage'
 import MenuListPage from './features/menu/pages/MenuListPage'
 import LandingPage from './features/landing/pages/LandingPage'
-import FeatureComingSoonPage from './components/common/FeatureComingSoonPage'
+import PriceForecastPage from './features/price/pages/PriceForecastPage'
 import './App.css'
 
 /** 서버의 공통 오류 응답을 사용자용 문장으로 변환합니다. 네트워크 단절도 구분해 안내합니다. */
@@ -200,7 +200,8 @@ function FacilitySetupPage({ user, onAuthenticated }) {
 
 /** 인증과 시설 설정 완료를 확인하는 최소 홈입니다. 실제 대시보드 API가 준비되면 카드만 교체할 수 있습니다. */
 function HomePage({ user, onLogout }) {
-  return <main className="home-page"><header className="home-header"><strong>MEAL<span>FIT</span></strong><button onClick={onLogout}>로그아웃</button></header><section className="home-content"><p className="eyebrow">OPERATIONS HOME</p><h1>{user?.name}님, 좋은 하루예요.</h1><p>로그인과 시설 연결이 완료되었습니다. 대시보드 데이터가 준비되면 이곳에서 확인할 수 있습니다.</p><div className="home-grid"><article><span>예상 식재료비</span><strong>데이터 준비 중</strong></article><article><span>가격 상승 영향</span><strong>데이터 준비 중</strong></article></div></section></main>
+  const navigate = useNavigate()
+  return <main className="home-page"><header className="home-header"><strong>MEAL<span>FIT</span></strong><button onClick={onLogout}>로그아웃</button></header><section className="home-content"><p className="eyebrow">OPERATIONS HOME</p><h1>{user?.name}님, 좋은 하루예요.</h1><p>로그인과 시설 연결이 완료되었습니다. 대시보드 데이터가 준비되면 이곳에서 확인할 수 있습니다.</p><div className="home-grid"><article><span>예상 식재료비</span><strong>데이터 준비 중</strong></article><article><span>가격 상승 영향</span><strong>데이터 준비 중</strong></article></div><button className="primary-button home-action" onClick={() => navigate('/meal-plan')}>주간 식단 만들기</button></section></main>
 }
 
 /** 토큰 사용자 정보가 없을 때 보호 화면 주소에 직접 접근하지 못하게 합니다. */
@@ -235,16 +236,21 @@ function AppRoutes() {
 
       {/* 보호 화면: 사용자 정보가 없으면 ProtectedRoute가 로그인 화면으로 이동시킵니다. */}
       <Route path="/setup" element={<ProtectedRoute user={user}><FacilitySetupPage user={user} onAuthenticated={setUser} /></ProtectedRoute>} />
-      <Route path="/home" element={<ProtectedRoute user={user}><HomePage user={user} onLogout={logout} /></ProtectedRoute>} />
+      <Route path="/home" element={
+          <ProtectedRoute user={user}>
+            <HomePage user={user} onLogout={logout} />
+          </ProtectedRoute>
+        } 
+      />
       <Route path="/menus" element={<ProtectedRoute user={user}><MenuListPage /></ProtectedRoute>} />
-      <Route path="/budget" element={<ProtectedRoute user={user}><BudgetAnalysisPage /></ProtectedRoute>} />
+      <Route path="/budget" element={<ProtectedRoute user={user}><BudgetAnalysisPage user={user} onLogout={logout} /></ProtectedRoute>} />
       <Route path="/admin" element={<AdminRoute user={user}><AdminPage user={user} onLogout={logout} /></AdminRoute>} />
       <Route path="/manager" element={<ManagerRoute user={user}><ManagerPage user={user} onLogout={logout} /></ManagerRoute>} />
       {/* 새로 추가된 주간 식단 화면을 실제 식단 API와 연결합니다. */}
       <Route path="/meal-plans" element={<ProtectedRoute user={user}><MealPlanPage onLogout={logout} /></ProtectedRoute>} />
 
       {/* 아직 실제 기능 화면이 없는 주소는 공통 준비 중 화면을 사용합니다. */}
-      <Route path="/prices" element={<ProtectedRoute user={user}><FeatureComingSoonPage eyebrow="PRICE FORECAST" title="식재료 가격 예측" description="가격 수집과 예측 API 연결 후 품목별 7일 전망을 확인할 수 있습니다." /></ProtectedRoute>} />
+      <Route path="/prices" element={<ProtectedRoute user={user}><PriceForecastPage /></ProtectedRoute>} />
 
       {/* 정의되지 않은 주소로 접근하면 공개 첫 화면으로 되돌립니다. */}
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -257,3 +263,4 @@ function App() {
 }
 
 export default App
+

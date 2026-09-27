@@ -1,0 +1,57 @@
+.price-page { min-height: 100vh; background: #f4f8f5; color: #173f2d; }
+.price-page-header { height: 68px; padding: 0 5vw; display: flex; align-items: center; justify-content: space-between; background: #fff; border-bottom: 1px solid #dce9df; }
+.price-logo { color: #173f2d; font-size: 20px; font-weight: 900; text-decoration: none; letter-spacing: -.5px; }
+.price-logo span { color: #2f9b64; }
+.price-page-header nav { display: flex; gap: 26px; }
+.price-page-header nav a { color: #657a6d; font-size: 13px; font-weight: 700; text-decoration: none; }
+.price-page-header nav a.active { color: #20784a; }
+.price-page-content { width: min(1180px, 92vw); margin: 0 auto; padding: 44px 0 64px; }
+.price-title-row { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin-bottom: 26px; }
+.price-eyebrow { margin: 0 0 6px; color: #2f9b64; font-size: 11px; font-weight: 900; letter-spacing: 1.7px; }
+.price-title-row h1 { margin: 0; font-size: clamp(28px, 4vw, 38px); letter-spacing: -1.4px; }
+.price-title-row p:not(.price-eyebrow) { margin: 9px 0 0; color: #708378; font-size: 14px; }
+.price-model-badge { padding: 9px 13px; border-radius: 999px; background: #e8f5ed; color: #217849; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.price-dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(310px, .8fr); gap: 20px; align-items: start; }
+.price-panel { background: #fff; border: 1px solid #dce9df; border-radius: 20px; box-shadow: 0 14px 38px rgba(35, 83, 55, .07); overflow: hidden; }
+.price-panel-heading { min-height: 68px; padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #e7f0e9; }
+.price-panel-heading span { color: #6d8275; font-size: 10px; font-weight: 900; letter-spacing: 1px; }
+.price-panel-heading h2 { margin: 3px 0 0; font-size: 18px; }
+.price-panel-heading small { color: #789084; font-size: 11px; font-weight: 700; }
+.price-chart-wrap { padding: 18px 20px 20px; }
+.price-chart-legend { display: flex; justify-content: flex-end; gap: 18px; padding: 0 12px 8px; color: #657a6d; font-size: 11px; font-weight: 700; }
+.price-chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.price-chart-legend i { width: 18px; height: 3px; border-radius: 2px; }
+.legend-actual { background: #2f9b64; }
+.legend-prediction { background: repeating-linear-gradient(90deg, #df7e35 0 6px, transparent 6px 9px); }
+.price-chart { width: 100%; min-height: 300px; display: block; }
+.chart-grid-line { stroke: #e4ede7; stroke-width: 1; }
+.chart-axis-label { fill: #82958a; font-size: 10px; }
+.chart-actual-line { fill: none; stroke: #2f9b64; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.chart-actual-point { fill: #fff; stroke: #2f9b64; stroke-width: 2.5; }
+.chart-prediction-line { stroke: #df7e35; stroke-width: 3; stroke-dasharray: 7 6; }
+.chart-prediction-point { fill: #fff7ed; stroke: #df7e35; stroke-width: 4; }
+.chart-prediction-label { fill: #bd6323; font-size: 11px; font-weight: 800; }
+.price-chart-note { margin: 4px 8px 0; padding: 10px 12px; border-radius: 9px; background: #fff8ee; color: #89562f; font-size: 11px; line-height: 1.5; }
+.risk-ranking-list { list-style: none; margin: 0; padding: 10px; }
+.risk-ranking-list li + li { border-top: 1px solid #edf3ef; }
+.risk-ranking-item { width: 100%; padding: 13px 10px; display: grid; grid-template-columns: 30px minmax(90px, 1fr) auto auto; align-items: center; gap: 10px; border: 0; border-radius: 10px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.risk-ranking-item:hover, .risk-ranking-item.active { background: #edf7f0; }
+.risk-rank { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 9px; background: #e2f0e7; color: #24794c; font-size: 12px; font-weight: 900; }
+.risk-ingredient, .risk-score { display: flex; flex-direction: column; gap: 3px; }
+.risk-ingredient strong { font-size: 13px; }
+.risk-ingredient small, .risk-score small { color: #84968b; font-size: 9px; }
+.risk-score { text-align: right; }
+.risk-score strong { color: #b85d24; font-size: 11px; }
+.risk-change { min-width: 48px; text-align: right; font-size: 11px; font-weight: 900; }
+.risk-change.up { color: #d25e45; }
+.risk-change.down { color: #258252; }
+.risk-excluded-note { margin: 0; padding: 12px 18px; border-top: 1px solid #edf3ef; color: #82958a; font-size: 10px; line-height: 1.5; }
+.price-loading, .price-empty, .price-error { min-height: 230px; padding: 28px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; color: #7a8e82; font-size: 13px; text-align: center; }
+.risk-panel .price-loading, .risk-panel .price-empty, .risk-panel .price-error { min-height: 190px; }
+.price-loading i { width: 30px; height: 30px; border: 3px solid #dcefe2; border-top-color: #38a369; border-radius: 50%; animation: price-spin .8s linear infinite; }
+.price-error { color: #b63838; }
+.price-error p { margin: 0; }
+.price-error button { padding: 8px 13px; border: 1px solid #d8e8dd; border-radius: 8px; background: #fff; color: #27774d; font-weight: 800; cursor: pointer; }
+@keyframes price-spin { to { transform: rotate(360deg); } }
+@media (max-width: 900px) { .price-dashboard-grid { grid-template-columns: 1fr; } }
+@media (max-width: 620px) { .price-page-header nav { gap: 12px; } .price-page-header nav a { font-size: 11px; } .price-title-row { align-items: flex-start; flex-direction: column; } .price-chart-wrap { padding: 12px 4px 16px; overflow-x: auto; } .price-chart { min-width: 650px; } .risk-ranking-item { grid-template-columns: 28px 1fr auto; } .risk-change { grid-column: 3; } }
