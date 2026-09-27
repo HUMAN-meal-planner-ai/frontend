@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getAdminUsers, updateAdminUserRole } from '../api/adminApi'
+import ErrorLogPanel from '../components/ErrorLogPanel'
+import SystemStatusPanel from '../components/SystemStatusPanel'
 import './AdminPage.css'
 
 // 서버가 전달하는 영문 enum 값을 화면용 한글 문구로 바꾸는 표입니다.
@@ -27,6 +29,9 @@ function getLoadErrorMessage(error) {
  * 회원의 비밀번호 같은 민감 정보는 다루지 않고 계정·권한·시설 연결 상태만 조회합니다.
  */
 export default function AdminPage({ user, onLogout }) {
+  // 별도 URL을 늘리지 않고 한 관리자 화면 안에서 세 업무 영역을 전환하는 탭 상태입니다.
+  // 각 운영 패널은 선택되었을 때 마운트되므로 사용하지 않는 상태 API를 미리 호출하지 않습니다.
+  const [activeTab, setActiveTab] = useState('members')
   // 서버에서 조회한 원본 회원 목록과 사용자가 선택한 검색·필터 조건입니다.
   const [members, setMembers] = useState([])
   const [searchKeyword, setSearchKeyword] = useState('')
@@ -116,7 +121,10 @@ export default function AdminPage({ user, onLogout }) {
         <Link className="admin-logo" to="/">MEAL<span>FIT</span></Link>
         <div className="admin-sidebar-label">ADMIN CONSOLE</div>
         <nav aria-label="관리자 메뉴">
-          <Link className="active" to="/admin"><span aria-hidden="true">●</span>회원 관리</Link>
+          {/* button 탭은 현재 관리자 화면을 유지하고, 첫 화면 링크만 실제 주소 이동을 수행합니다. */}
+          <button className={activeTab === 'members' ? 'active' : ''} type="button" onClick={() => setActiveTab('members')}><span aria-hidden="true">●</span>회원 관리</button>
+          <button className={activeTab === 'status' ? 'active' : ''} type="button" onClick={() => setActiveTab('status')}><span aria-hidden="true">◆</span>시스템 상태</button>
+          <button className={activeTab === 'logs' ? 'active' : ''} type="button" onClick={() => setActiveTab('logs')}><span aria-hidden="true">!</span>오류 로그</button>
           <Link to="/"><span aria-hidden="true">⌂</span>서비스 첫 화면</Link>
         </nav>
         <div className="admin-account">
@@ -129,11 +137,12 @@ export default function AdminPage({ user, onLogout }) {
       <section className="admin-main">
         {/* 이 화면이 일반 사용자 화면이 아닌 ADMIN 전용임을 알려주는 상단 영역입니다. */}
         <header className="admin-topbar">
-          <div><p>MealFit 운영 관리</p><h1>회원 관리</h1></div>
+          <div><p>MealFit 운영 관리</p><h1>{activeTab === 'members' ? '회원 관리' : activeTab === 'status' ? '시스템 상태' : '오류 로그'}</h1></div>
           <span className="admin-role-chip">ADMIN ONLY</span>
         </header>
 
         <div className="admin-content">
+          {activeTab === 'members' && <>
           {/* 관리자 화면의 목적을 설명하는 소개 배너입니다. */}
           <section className="admin-welcome" aria-labelledby="admin-welcome-title">
             <div><p>MEMBER OVERVIEW</p><h2 id="admin-welcome-title">서비스 가입 현황을 한눈에 확인하세요.</h2><span>회원 권한과 시설 연결 상태를 조회할 수 있습니다.</span></div>
@@ -201,6 +210,9 @@ export default function AdminPage({ user, onLogout }) {
               </div>
             )}
           </section>
+          </>}
+          {activeTab === 'status' && <SystemStatusPanel />}
+          {activeTab === 'logs' && <ErrorLogPanel />}
         </div>
       </section>
     </main>
