@@ -1,4 +1,4 @@
-﻿import { formatWon, checkIsCostIncrease } from '../utils/budgetUtils';
+import { formatCurrency, formatWon, checkIsCostIncrease } from '../utils/budgetUtils';
 
 // 메뉴 위험도 태그 렌더링
 const renderRiskBadge = (riskLevel) => {
@@ -11,6 +11,20 @@ const renderRiskBadge = (riskLevel) => {
   return <span className="risk-level-badge safe">✅ 안정 (SAFE)</span>;
 };
 
+// 검토 우선순위 태그 렌더링 (BUDG-003)
+const renderPriorityBadge = (priority) => {
+  if (priority === 'URGENT') {
+    return <span className="status-pill pill-danger">🚨 긴급 검토 (URGENT)</span>;
+  }
+  if (priority === 'HIGH') {
+    return <span className="status-pill pill-warning">⚠️ 우선 검토 (HIGH)</span>;
+  }
+  if (priority === 'MEDIUM') {
+    return <span className="status-pill pill-info">🔍 일반 검토 (MEDIUM)</span>;
+  }
+  return <span className="status-pill pill-success">✅ 안정 (LOW)</span>;
+};
+
 export default function CostDriverRiskTab({
   drivers,
   menuRisks,
@@ -19,12 +33,123 @@ export default function CostDriverRiskTab({
   selectedMenuRisk,
   selectedDriver,
   replacementCandidates,
+  highCostData, // BUDG-003
+  onOpenReplacementModal, // BUDG-005
 }) {
   const candidates = replacementCandidates?.candidates || [];
+  const highCostCandidates = highCostData?.candidates || [];
 
   return (
     <div className="tab-fade-in">
-      {/* 1. [AUTO-006] 주간 재평가 변경 검토 메뉴 후보 배너/섹션 */}
+      {/* 1. [BUDG-003] 선택 주차 식단 비용 기여도 높은 메뉴 식별 & 재구성 변경 검토 후보 */}
+      {highCostCandidates.length > 0 && (
+        <section className="budget-glass-panel high-cost-detection-panel">
+          <div className="panel-header-bar">
+            <div>
+              <div className="panel-kicker-tag high-cost-tag">
+                <span className="sparkle-icon">💰</span> BUDG-003 비용 기여 분석
+              </div>
+              <h3 className="panel-candidate-title">
+                주간 식단 비용 기여 상위 메뉴 Top {highCostCandidates.length}
+              </h3>
+              <p className="panel-candidate-desc">
+                선택 주차 식단 총 식재료비({formatCurrency(highCostData?.weeklyTotalCost)}) 중 비용 기여율이 높은 핵심 메뉴들을 식별하고 대체 메뉴 교체 시 예상 절감액을 분석합니다.
+              </p>
+            </div>
+            <div className="high-cost-meta-badge">
+              <span>주간 총 비용 <strong>{formatCurrency(highCostData?.weeklyTotalCost)}</strong></span>
+              <span className="pill-divider" />
+              <span>평균 단가 <strong>{formatWon(highCostData?.averageCostPerMeal)}</strong></span>
+            </div>
+          </div>
+
+          <div className="brand-table-wrapper">
+            <table className="brand-table high-cost-table">
+              <thead>
+                <tr>
+                  <th>순위</th>
+                  <th>메뉴명</th>
+                  <th>카테고리</th>
+                  <th>1인분 예상 단가</th>
+                  <th>제공 횟수</th>
+                  <th>주간 총 소요액</th>
+                  <th>비용 기여율</th>
+                  <th>검토 우선순위</th>
+                  <th>예상 절감 잠재액</th>
+                  <th>대체 분석</th>
+                </tr>
+              </thead>
+              <tbody>
+                {highCostCandidates.map((hc, idx) => {
+                  const rank = hc.rank || idx + 1;
+                  const isSelected = selectedMenuId === hc.menuId;
+                  return (
+                    <tr
+                      key={hc.menuId}
+                      className={`table-clickable-row ${isSelected ? 'row-active' : ''}`}
+                      onClick={() => onSelectMenu(hc.menuId)}
+                    >
+                      <td><span className={`rank-pill ${rank <= 2 ? 'rank-1' : ''}`}>#{rank}</span></td>
+                      <td>
+                        <strong className="menu-name-text">{hc.menuName}</strong>
+                        {hc.topCostDriver && (
+                          <small className="hc-sub-driver"> (핵심: {hc.topCostDriver})</small>
+                        )}
+                      </td>
+                      <td><span className="rep-slot-tag">{hc.slotName || hc.slot}</span></td>
+                      <td>{formatWon(hc.averageCostPerPerson || hc.costPerPerson)}</td>
+                      <td>총 <strong>{hc.servedCount || hc.servedMeals?.length || 1}회</strong> ({hc.totalServedMealCount?.toLocaleString()}명)</td>
+                      <td><strong>{formatCurrency(hc.weeklyTotalMenuCost)}</strong></td>
+                      <td>
+                        <div className="driver-bar-wrapper">
+                          <div
+                            className="driver-bar-fill"
+                            style={{ width: `${Math.min(Number(hc.costContributionRate) || 0, 100)}%` }}
+                          />
+                          <span className="text-red fw-bold">{hc.costContributionRate}%</span>
+                        </div>
+                      </td>
+                      <td>{renderPriorityBadge(hc.reviewPriority)}</td>
+                      <td>
+                        {hc.estimatedSavingsPotential ? (
+                          <strong className="text-green">
+                            +{formatCurrency(hc.estimatedSavingsPotential)} 절감 가능
+                          </strong>
+                        ) : (
+                          <span className="text-muted">-</span>
+                        )}
+                      </td>
+                      <td>
+                        {onOpenReplacementModal && (
+                          <button
+                            type="button"
+                            className="action-pill-btn secondary btn-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenReplacementModal(hc);
+                            }}
+                            title="[BUDG-005] 대체 메뉴 적용 전후 비용 차이 및 절감액 분석"
+                          >
+                            🔄 대체 비교
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {highCostData?.recommendationSummary && (
+            <div className="impact-summary-callout high-cost-summary">
+              💡 <strong>식단 재구성 권고:</strong> {highCostData.recommendationSummary}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* 2. [AUTO-006] 주간 재평가 변경 검토 메뉴 후보 배너/섹션 */}
       {candidates.length > 0 && (
         <section className="budget-glass-panel candidate-detection-panel">
           <div className="panel-header-bar">
@@ -79,6 +204,21 @@ export default function CostDriverRiskTab({
                       ))}
                     </div>
                   )}
+
+                  {onOpenReplacementModal && (
+                    <div className="candidate-card-footer">
+                      <button
+                        type="button"
+                        className="action-pill-btn secondary btn-xs w-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenReplacementModal(c);
+                        }}
+                      >
+                        🔄 대체 메뉴 절감액 분석 (BUDG-005)
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -86,7 +226,7 @@ export default function CostDriverRiskTab({
         </section>
       )}
 
-      {/* 2. 전체 메뉴 위험도 & Cost Driver 카드 그리드 */}
+      {/* 3. 전체 메뉴 위험도 & Cost Driver 카드 그리드 */}
       <div className="driver-cards-masonry">
         {drivers.map((drv) => {
           const isSelected = selectedMenuId === drv.menuId;
@@ -178,6 +318,20 @@ export default function CostDriverRiskTab({
                   +{formatWon(selectedMenuRisk?.costDifference || selectedDriver?.totalCostDifference)}
                 </strong>
               </span>
+              {onOpenReplacementModal && (
+                <button
+                  type="button"
+                  className="action-pill-btn secondary btn-sm"
+                  onClick={() => onOpenReplacementModal({
+                    menuId: selectedMenuRisk?.menuId || selectedDriver?.menuId,
+                    menuName: selectedMenuRisk?.menuName || selectedDriver?.menuName,
+                    costPerPerson: selectedMenuRisk?.currentCostPerPerson || selectedDriver?.currentCostPerPerson,
+                    futureCostPerPerson: selectedMenuRisk?.futureCostPerPerson || selectedDriver?.futureCostPerPerson,
+                  })}
+                >
+                  🔄 대체 메뉴 절감액 분석 (BUDG-005)
+                </button>
+              )}
             </div>
           </div>
 
