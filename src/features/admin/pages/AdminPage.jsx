@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getAdminUsers, updateAdminUserRole } from '../api/adminApi'
 import ErrorLogPanel from '../components/ErrorLogPanel'
+import AdminPriceDataPanel from '../components/AdminPriceDataPanel'
 import SystemStatusPanel from '../components/SystemStatusPanel'
 import './AdminPage.css'
 
@@ -43,6 +44,7 @@ export default function AdminPage({ user, onLogout }) {
   // 역할을 변경 중인 한 명의 ID만 저장하여 해당 select만 잠그고 중복 요청을 방지합니다.
   const [roleUpdatingId, setRoleUpdatingId] = useState(null)
   const [roleUpdateMessage, setRoleUpdateMessage] = useState('')
+  const tabTitles = { members: '회원 관리', prices: '가격 데이터', status: '시스템 상태', logs: '오류 로그' }
 
   /** 첫 진입과 다시 시도 버튼 클릭 시 최신 회원 목록을 요청합니다. */
   const loadMembers = async () => {
@@ -123,6 +125,7 @@ export default function AdminPage({ user, onLogout }) {
         <nav aria-label="관리자 메뉴">
           {/* button 탭은 현재 관리자 화면을 유지하고, 첫 화면 링크만 실제 주소 이동을 수행합니다. */}
           <button className={activeTab === 'members' ? 'active' : ''} type="button" onClick={() => setActiveTab('members')}><span aria-hidden="true">●</span>회원 관리</button>
+          <button className={activeTab === 'prices' ? 'active' : ''} type="button" onClick={() => setActiveTab('prices')}><span aria-hidden="true">₩</span>가격 데이터</button>
           <button className={activeTab === 'status' ? 'active' : ''} type="button" onClick={() => setActiveTab('status')}><span aria-hidden="true">◆</span>시스템 상태</button>
           <button className={activeTab === 'logs' ? 'active' : ''} type="button" onClick={() => setActiveTab('logs')}><span aria-hidden="true">!</span>오류 로그</button>
           <Link to="/"><span aria-hidden="true">⌂</span>서비스 첫 화면</Link>
@@ -137,7 +140,7 @@ export default function AdminPage({ user, onLogout }) {
       <section className="admin-main">
         {/* 이 화면이 일반 사용자 화면이 아닌 ADMIN 전용임을 알려주는 상단 영역입니다. */}
         <header className="admin-topbar">
-          <div><p>MealFit 운영 관리</p><h1>{activeTab === 'members' ? '회원 관리' : activeTab === 'status' ? '시스템 상태' : '오류 로그'}</h1></div>
+          <div><p>MealFit 운영 관리</p><h1>{tabTitles[activeTab]}</h1></div>
           <span className="admin-role-chip">ADMIN ONLY</span>
         </header>
 
@@ -211,6 +214,7 @@ export default function AdminPage({ user, onLogout }) {
             )}
           </section>
           </>}
+          {activeTab === 'prices' && <AdminPriceDataPanel />}
           {activeTab === 'status' && <SystemStatusPanel />}
           {activeTab === 'logs' && <ErrorLogPanel />}
         </div>

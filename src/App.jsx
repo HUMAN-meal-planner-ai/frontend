@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
-import api, { clearAuth, getStoredUser, saveAuth } from './api/axios'
+import api, { clearAuth, consumeAuthNotice, getStoredUser, saveAuth } from './api/axios'
 import BudgetAnalysisPage from './features/budget/pages/BudgetAnalysisPage'
 import AdminPage from './features/admin/pages/AdminPage'
 import ManagerPage from './features/manager/pages/ManagerPage'
@@ -63,7 +63,8 @@ function LoginPage({ onAuthenticated }) {
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState('')
+  // 401 처리기가 남긴 안내를 한 번만 읽어 세션 만료와 일반 로그인 실패를 구분해 보여줍니다.
+  const [error, setError] = useState(() => consumeAuthNotice())
   const [loading, setLoading] = useState(false)
 
   const updateField = ({ target: { name, value } }) => {
