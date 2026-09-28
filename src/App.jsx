@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import api, { clearAuth, getStoredUser, saveAuth } from './api/axios'
 import BudgetAnalysisPage from './features/budget/pages/BudgetAnalysisPage'
@@ -225,8 +225,13 @@ function AppRoutes() {
   const navigate = useNavigate()
   // 브라우저에 저장된 사용자 정보가 있으면 새로고침 후에도 로그인 상태를 복원합니다.
   const [user, setUser] = useState(() => getStoredUser())
-  // 로그아웃하면 저장된 JWT와 사용자 정보를 제거하고 공개 첫 화면으로 이동합니다.
-  const logout = () => { clearAuth(); setUser(null); navigate('/', { replace: true }) }
+  // 로그아웃하면 저장된 JWT와 사용자 정보를 제거하고 대상 화면으로 이동합니다.
+  const logout = (redirectTo = '/') => {
+    clearAuth()
+    setUser(null)
+    const target = typeof redirectTo === 'string' ? redirectTo : '/'
+    navigate(target, { replace: true })
+  }
   return (
     <Routes>
       {/* 공개 화면: 로그인하지 않은 사용자도 접근할 수 있습니다. */}

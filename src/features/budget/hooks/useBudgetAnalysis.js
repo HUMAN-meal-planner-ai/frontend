@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   getAllMenuCosts,
   getMenuCostDetail,
@@ -25,6 +25,11 @@ import {
   verifyWeeklyPlanBudget,
 } from '../api/budgetAutomationApi';
 import {
+  getHighCostMenuCandidates,
+  getMenuReplacementAnalysis,
+  getMenuReplacementDiff,
+} from '../api/budgetApi';
+import {
   getMondayOfWeek,
   checkIsExceeded,
   getExceededAmount,
@@ -32,8 +37,7 @@ import {
 
 /**
  * [예산 분석 & 자동화 통합 커스텀 훅]
- * 원가 계산, 비교, 위험 진단 데이터뿐만 아니라
- * AUTO-002(예산 재평가/알림), AUTO-004(주간식단 재확인), AUTO-006(변경 검토 후보 탐지)을 통합 관리합니다.
+ * COST-001 ~ COST-014, BUDG-002, BUDG-003, BUDG-005, MENU-008, MENU-009, AUTO-002, AUTO-004, AUTO-006 통합 관리
  */
 export function useBudgetAnalysis(facilityId = 1) {
   // 1. 입력 필터 폼 상태
@@ -63,13 +67,17 @@ export function useBudgetAnalysis(facilityId = 1) {
   const [budgetUsage, setBudgetUsage] = useState(null);
   const [monthlyPlanCost, setMonthlyPlanCost] = useState(null);
   const [weeklyPlanCost, setWeeklyPlanCost] = useState(null);
+  const [highCostData, setHighCostData] = useState(null); // BUDG-003
 
-  // 4. 자동화(Automation) 데이터 상태
+  // 4. 자동화(Automation) & 모달 상태
   const [replacementCandidates, setReplacementCandidates] = useState(null);
   const [unreadAlertCount, setUnreadAlertCount] = useState(0);
   const [alertList, setAlertList] = useState([]);
   const [isReevaluating, setIsReevaluating] = useState(false);
   const [reverificationResult, setReverificationResult] = useState(null);
+  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const [isReplacementModalOpen, setIsReplacementModalOpen] = useState(false);
+  const [replacementTargetMenu, setReplacementTargetMenu] = useState(null);
 
   // 5. 단건 상세 선택 상태
   const [selectedMenuId, setSelectedMenuId] = useState(null);
@@ -121,7 +129,7 @@ export function useBudgetAnalysis(facilityId = 1) {
     []
   );
 
-  // 전체 데이터 일괄 조회 (자동화 API 포함)
+  // 전체 데이터 일괄 조회 (자동화 API 및 BUDG-003 포함)
   const fetchAllData = useCallback(
     async (count, target, tDate, bDate, facId, mode) => {
       setLoading(true);
@@ -142,6 +150,7 @@ export function useBudgetAnalysis(facilityId = 1) {
           candidatesData,
           unreadCountData,
           alertsData,
+          highCostResult,
         ] = await Promise.all([
           mode === 'CURRENT'
             ? getAllMenuCosts({ mealCount: count, targetCost: target })
@@ -189,6 +198,15 @@ export function useBudgetAnalysis(facilityId = 1) {
             console.warn('[getBudgetAlerts] 실패:', e);
             return [];
           }),
+          // BUDG-003 주간 고비용 기여 메뉴 식별
+          getHighCostMenuCandidates({
+            facilityId: facId,
+            startDate: weekStartDate,
+            topN: 5,
+          }).catch((e) => {
+            console.warn('[getHighCostMenuCandidates] 실패:', e);
+            return null;
+          }),
         ]);
 
         setMenuCosts(costData || []);
@@ -202,6 +220,7 @@ export function useBudgetAnalysis(facilityId = 1) {
         setReplacementCandidates(candidatesData);
         setUnreadAlertCount(unreadCountData?.unreadCount || 0);
         setAlertList(alertsData || []);
+        setHighCostData(highCostResult);
 
         if (costData && costData.length > 0) {
           const defaultMenu = costData.find((m) => checkIsExceeded(m, target)) || costData[0];
@@ -216,10 +235,15 @@ export function useBudgetAnalysis(facilityId = 1) {
         }
       } catch (err) {
         console.error('[원가 API 일괄 조회 실패]:', err);
-        setError(
-          err.response?.data?.message ||
-            '원가 분석 데이터를 불러오지 못했습니다. 백엔드 서버 상태를 확인해 주세요.'
-        );
+        const status = err.response?.status;
+        if (status === 401) {
+          setError('로그인이 필요한 서비스입니다. 로그인 후 원가 및 예산 분석 데이터를 이용해 주세요.');
+        } else {
+          setError(
+            err.response?.data?.message ||
+              '원가 분석 데이터를 불러오지 못했습니다. 백엔드 서버 상태를 확인해 주세요.'
+          );
+        }
       } finally {
         setLoading(false);
       }
@@ -354,6 +378,24 @@ export function useBudgetAnalysis(facilityId = 1) {
     }
   };
 
+  // 알림 삭제 핸들러
+  const handleDeleteAlert = (alertId) => {
+    setAlertList((prev) => prev.filter((a) => a.alertId !== alertId));
+  };
+
+  // 모달 제어 핸들러
+  const handleOpenAlertModal = () => setIsAlertModalOpen(true);
+  const handleCloseAlertModal = () => setIsAlertModalOpen(false);
+
+  const handleOpenReplacementModal = (menu) => {
+    setReplacementTargetMenu(menu);
+    setIsReplacementModalOpen(true);
+  };
+  const handleCloseReplacementModal = () => {
+    setReplacementTargetMenu(null);
+    setIsReplacementModalOpen(false);
+  };
+
   // 메뉴 원가 요약 통계 계산
   const summary = useMemo(() => {
     if (!menuCosts || menuCosts.length === 0) {
@@ -399,7 +441,7 @@ export function useBudgetAnalysis(facilityId = 1) {
     costMode,
     setCostMode,
 
-    // 원가 데이터
+    // 원가 & 예산 데이터
     menuCosts,
     comparisons,
     drivers,
@@ -408,13 +450,17 @@ export function useBudgetAnalysis(facilityId = 1) {
     budgetUsage,
     monthlyPlanCost,
     weeklyPlanCost,
+    highCostData, // BUDG-003
 
-    // 자동화(Automation) 데이터
-    replacementCandidates,
+    // 자동화(Automation) & 모달 데이터
+    replacementCandidates, // AUTO-006
     unreadAlertCount,
     alertList,
     isReevaluating,
-    reverificationResult,
+    reverificationResult, // AUTO-004
+    isAlertModalOpen,
+    isReplacementModalOpen,
+    replacementTargetMenu, // BUDG-005 target
 
     // 단건 선택 데이터
     selectedMenuId,
@@ -439,5 +485,10 @@ export function useBudgetAnalysis(facilityId = 1) {
     handleVerifyWeeklyPlan,
     handleMarkAlertAsRead,
     handleMarkAllAlertsAsRead,
+    handleDeleteAlert,
+    handleOpenAlertModal,
+    handleCloseAlertModal,
+    handleOpenReplacementModal,
+    handleCloseReplacementModal,
   };
 }

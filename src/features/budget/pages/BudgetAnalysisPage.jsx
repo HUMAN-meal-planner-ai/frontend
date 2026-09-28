@@ -1,4 +1,5 @@
-﻿import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { clearAuth } from '../../../api/axios';
 import { useBudgetAnalysis } from '../hooks/useBudgetAnalysis';
 import { formatWon } from '../utils/budgetUtils';
 
@@ -10,6 +11,8 @@ import CostComparisonTab from '../components/CostComparisonTab';
 import CostDriverRiskTab from '../components/CostDriverRiskTab';
 import BudgetScheduleTab from '../components/BudgetScheduleTab';
 import BudgetBottomActions from '../components/BudgetBottomActions';
+import BudgetAlertModal from '../components/BudgetAlertModal';
+import MenuReplacementModal from '../components/MenuReplacementModal';
 
 import './BudgetAnalysisPage.css';
 
@@ -22,6 +25,7 @@ const navigationItems = [
 ];
 
 export default function BudgetAnalysisPage({ user, onLogout }) {
+  const navigate = useNavigate();
   const accountPage = user?.role === 'ADMIN' ? '/admin' : user?.role === 'MANAGER' ? '/manager' : '/home';
   const accountLabel = user?.role === 'ADMIN' ? '관리자 페이지' : user?.role === 'MANAGER' ? '시설 관리' : '내 대시보드';
 
@@ -50,10 +54,15 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     budgetUsage,
     monthlyPlanCost,
     weeklyPlanCost,
+    highCostData, // BUDG-003
 
     replacementCandidates,
     unreadAlertCount,
+    alertList,
     isReevaluating,
+    isAlertModalOpen,
+    isReplacementModalOpen,
+    replacementTargetMenu,
 
     selectedMenuId,
     selectedMenuDetail,
@@ -72,6 +81,13 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     handleSelectMenu,
     handleTriggerReevaluation,
     handleVerifyWeeklyPlan,
+    handleMarkAlertAsRead,
+    handleMarkAllAlertsAsRead,
+    handleDeleteAlert,
+    handleOpenAlertModal,
+    handleCloseAlertModal,
+    handleOpenReplacementModal,
+    handleCloseReplacementModal,
   } = useBudgetAnalysis();
 
   // 실시간 재평가 실행 클릭 시 알림
@@ -177,6 +193,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
             unreadAlertCount={unreadAlertCount}
             isReevaluating={isReevaluating}
             onTriggerReevaluation={handleReevaluateClick}
+            onOpenAlertModal={handleOpenAlertModal}
           />
 
           {/* 4. 분석 모드 탭 네비게이션 */}
@@ -193,13 +210,31 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
           {error && !loading && (
             <div className="budget-glass-panel error-panel">
               <p className="error-text">⚠️ {error}</p>
-              <button
-                type="button"
-                className="header-login-button"
-                onClick={handleApplyFilters}
-              >
-                다시 불러오기
-              </button>
+              {error.includes('로그인') ? (
+                <button
+                  type="button"
+                  className="header-login-button"
+                  onClick={() => {
+                    if (onLogout) {
+                      onLogout('/login');
+                    } else {
+                      clearAuth();
+                      navigate('/login');
+                    }
+                  }}
+                  style={{ display: 'inline-block', textDecoration: 'none' }}
+                >
+                  로그인하러 가기
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="header-login-button"
+                  onClick={handleApplyFilters}
+                >
+                  다시 불러오기
+                </button>
+              )}
             </div>
           )}
 
@@ -239,6 +274,8 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                   selectedMenuRisk={selectedMenuRisk}
                   selectedDriver={selectedDriver}
                   replacementCandidates={replacementCandidates}
+                  highCostData={highCostData}
+                  onOpenReplacementModal={handleOpenReplacementModal}
                 />
               )}
 
@@ -259,6 +296,28 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
             onVerifyWeeklyPlan={handleVerifyWeeklyPlanClick}
             onConfirmReview={() => alert('원가 및 예산 분석 검토가 완료되었습니다.')}
             isExceeded={summary.totalExceeded > 0}
+          />
+
+          {/* 6. [AUTO-002] 예산 경고 알림 관리 모달 */}
+          <BudgetAlertModal
+            isOpen={isAlertModalOpen}
+            onClose={handleCloseAlertModal}
+            alertList={alertList}
+            unreadCount={unreadAlertCount}
+            onMarkAsRead={handleMarkAlertAsRead}
+            onMarkAllAsRead={handleMarkAllAlertsAsRead}
+            onDeleteAlert={handleDeleteAlert}
+            onTriggerReevaluation={handleReevaluateClick}
+            isReevaluating={isReevaluating}
+          />
+
+          {/* 7. [BUDG-005] 대체 메뉴 원가 비교 & 절감액 시뮬레이션 모달 */}
+          <MenuReplacementModal
+            isOpen={isReplacementModalOpen}
+            onClose={handleCloseReplacementModal}
+            originalMenu={replacementTargetMenu}
+            appliedParams={appliedParams}
+            facilityId={1}
           />
         </div>
       </main>

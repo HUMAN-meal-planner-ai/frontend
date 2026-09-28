@@ -1,4 +1,4 @@
-﻿import { formatCurrency, formatWon, checkIsRisk } from '../utils/budgetUtils';
+import { formatCurrency, formatWon, checkIsRisk } from '../utils/budgetUtils';
 
 export default function BudgetRiskHero({
   budgetRisk,
@@ -8,6 +8,7 @@ export default function BudgetRiskHero({
   unreadAlertCount = 0,
   isReevaluating = false,
   onTriggerReevaluation,
+  onOpenAlertModal,
 }) {
   if (!budgetRisk && !budgetUsage) return null;
 
@@ -26,9 +27,14 @@ export default function BudgetRiskHero({
             {budgetRisk?.facilityName || budgetUsage?.facilityName || '시설 1'} · {budgetRisk?.budgetMonth || budgetUsage?.yearMonth || appliedParams.baseDate.slice(0, 7)} 기준
           </span>
           {unreadAlertCount > 0 && (
-            <span className="risk-unread-badge" title={`미확인 예산 경고 알림 ${unreadAlertCount}건`}>
-              미확인 알림 {unreadAlertCount}
-            </span>
+            <button
+              type="button"
+              className="risk-unread-badge clickable-badge"
+              onClick={onOpenAlertModal}
+              title={`미확인 예산 경고 알림 ${unreadAlertCount}건 확인하기`}
+            >
+              🔔 미확인 알림 {unreadAlertCount}
+            </button>
           )}
         </div>
 

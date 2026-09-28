@@ -1562,3 +1562,600 @@
   border-radius: 4px;
   font-weight: 600;
 }
+
+.candidate-card-footer {
+  margin-top: 10px;
+}
+
+/* ========================================================
+   BUDG-003 & BUDG-005 고비용 기여 메뉴 & 대체 분석 스타일
+   ======================================================== */
+.high-cost-detection-panel {
+  border-left: 4px solid #f59e0b;
+  margin-bottom: 24px;
+}
+
+.high-cost-tag {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.high-cost-meta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #fde68a;
+  font-size: 13px;
+  color: #78350f;
+}
+
+.high-cost-table th,
+.high-cost-table td {
+  vertical-align: middle;
+}
+
+.hc-sub-driver {
+  display: block;
+  font-size: 11px;
+  color: #e11d48;
+  font-weight: 600;
+}
+
+.high-cost-summary {
+  margin-top: 16px;
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+}
+
+.clickable-badge {
+  cursor: pointer;
+  border: none;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.clickable-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.35);
+}
+
+.btn-xs {
+  font-size: 11px;
+  padding: 4px 10px;
+  height: auto;
+  border-radius: 6px;
+}
+
+.btn-sm {
+  font-size: 12px;
+  padding: 6px 14px;
+  height: auto;
+  border-radius: 8px;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+/* ========================================================
+   공통 모달 (Budget Modal Overlay & Card)
+   ======================================================== */
+.budget-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.budget-modal-card {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  max-width: 860px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.budget-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.modal-title-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.modal-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.budget-modal-header h3 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.modal-sub-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.modal-close-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.budget-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 28px;
+  border-top: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+/* ========================================================
+   [AUTO-002] 예산 알림 모달 상세
+   ======================================================== */
+.alert-modal-card {
+  max-width: 680px;
+}
+
+.alert-modal-action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 28px;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.alert-count-tag {
+  font-size: 13px;
+  color: #475569;
+}
+
+.alert-count-tag strong {
+  color: #dc2626;
+}
+
+.alert-action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.alert-items-scrollable {
+  padding: 20px 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 520px;
+}
+
+.alert-empty-box {
+  text-align: center;
+  padding: 48px 20px;
+  color: #64748b;
+}
+
+.alert-empty-box .empty-icon {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.alert-item-card {
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  transition: all 0.2s;
+}
+
+.alert-item-card.unread {
+  border-left: 4px solid #dc2626;
+  background: #fffafa;
+}
+
+.alert-item-card.read {
+  opacity: 0.75;
+}
+
+.alert-item-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.alert-level-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.alert-level-badge.warning {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.alert-level-badge.caution {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.alert-level-badge.safe {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.alert-item-title {
+  font-size: 14px;
+  color: #0f172a;
+  flex: 1;
+}
+
+.alert-item-time {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.alert-item-message {
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.5;
+  margin: 0 0 10px;
+}
+
+.alert-item-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.alert-facility-tag {
+  font-size: 11px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.alert-item-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.alert-btn-action {
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.alert-btn-action.read-btn {
+  color: #0284c7;
+}
+
+.alert-btn-action.read-btn:hover {
+  background: #e0f2fe;
+}
+
+.alert-btn-action.delete-btn {
+  color: #ef4444;
+}
+
+.alert-btn-action.delete-btn:hover {
+  background: #fee2e2;
+}
+
+/* ========================================================
+   [BUDG-005] 대체 메뉴 시뮬레이션 모달 상세
+   ======================================================== */
+.replacement-modal-card {
+  max-width: 920px;
+}
+
+.replacement-source-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 28px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.source-menu-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.source-tag {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.source-name {
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.source-cost strong {
+  color: #dc2626;
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+
+.replacement-modal-body {
+  padding: 24px 28px;
+  overflow-y: auto;
+  max-height: 65vh;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.replacement-candidates-section .section-head-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.replacement-candidates-section h4 {
+  margin: 0;
+  font-size: 15px;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.candidate-select-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.rep-candidate-card {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 2px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rep-candidate-card:hover {
+  border-color: #38a369;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(56, 163, 105, 0.12);
+}
+
+.rep-candidate-card.selected {
+  border-color: #22c55e;
+  background: #f0fdf4;
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.15);
+}
+
+.rep-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rep-slot-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  color: #475569;
+}
+
+.rep-name {
+  font-size: 14px;
+  color: #0f172a;
+  flex: 1;
+}
+
+.rep-savings-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.rep-savings-badge.badge-savings {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.rep-savings-badge.badge-increase {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.rep-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.rep-risk-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.rep-risk-pill {
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.rep-risk-pill.safe {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.rep-risk-pill.warning {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.rep-diff-rate {
+  color: #64748b;
+}
+
+/* 대체 분석 영향도 상세 */
+.impact-cards-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .impact-cards-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.impact-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+
+.impact-box.weekly-box {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  border-color: #bbf7d0;
+}
+
+.impact-box h5 {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.impact-metric-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.impact-metric-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #475569;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.val-flow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.val-flow del {
+  color: #94a3b8;
+}
+
+.savings-highlight {
+  font-size: 11px;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.impact-summary-callout {
+  padding: 12px 16px;
+  background: #f0fdf4;
+  border-radius: 10px;
+  border-left: 3px solid #22c55e;
+  font-size: 13px;
+  color: #166534;
+  line-height: 1.5;
+  margin-top: 14px;
+}
+
