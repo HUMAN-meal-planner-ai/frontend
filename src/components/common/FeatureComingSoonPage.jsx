@@ -12,7 +12,7 @@ export default function FeatureComingSoonPage({ eyebrow, title, description }) {
         <p>{description}</p>
         <div className="coming-soon-actions">
           <Link to="/">서비스 홈</Link>
-          <Link to="/home">내 대시보드</Link>
+          <Link to="/">기본 화면</Link>
         </div>
       </section>
     </main>
