@@ -8,6 +8,7 @@ import MealPlanPage from './features/mealplan/pages/MealPlanPage'
 import MenuListPage from './features/menu/pages/MenuListPage'
 import LandingPage from './features/landing/pages/LandingPage'
 import PriceForecastPage from './features/price/pages/PriceForecastPage'
+import MenuChatPage from './features/chat/pages/MenuChatPage'
 import './App.css'
 
 /** 서버의 공통 오류 응답을 사용자용 문장으로 변환합니다. 네트워크 단절도 구분해 안내합니다. */
@@ -243,6 +244,7 @@ function AppRoutes() {
         } 
       />
       <Route path="/menus" element={<ProtectedRoute user={user}><MenuListPage /></ProtectedRoute>} />
+      <Route path="/menus/chat" element={<ProtectedRoute user={user}><MenuChatPage /></ProtectedRoute>}/>
       <Route path="/budget" element={<ProtectedRoute user={user}><BudgetAnalysisPage user={user} onLogout={logout} /></ProtectedRoute>} />
       <Route path="/admin" element={<AdminRoute user={user}><AdminPage user={user} onLogout={logout} /></AdminRoute>} />
       <Route path="/manager" element={<ManagerRoute user={user}><ManagerPage user={user} onLogout={logout} /></ManagerRoute>} />
