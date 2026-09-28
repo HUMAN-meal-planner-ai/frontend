@@ -5,6 +5,7 @@ import BudgetAnalysisPage from './features/budget/pages/BudgetAnalysisPage'
 import AdminPage from './features/admin/pages/AdminPage'
 import ManagerPage from './features/manager/pages/ManagerPage'
 import MealPlanPage from './features/mealplan/pages/MealPlanPage'
+import WeeklyMealPlanPage from './features/mealplan/pages/WeeklyMealPlanPage'
 import MenuListPage from './features/menu/pages/MenuListPage'
 import LandingPage from './features/landing/pages/LandingPage'
 import PriceForecastPage from './features/price/pages/PriceForecastPage'
@@ -256,6 +257,7 @@ function AppRoutes() {
       <Route path="/manager" element={<ManagerRoute user={user}><ManagerPage user={user} onLogout={logout} /></ManagerRoute>} />
       {/* 새로 추가된 주간 식단 화면을 실제 식단 API와 연결합니다. */}
       <Route path="/meal-plans" element={<ProtectedRoute user={user}><MealPlanPage onLogout={logout} /></ProtectedRoute>} />
+      <Route path="/meal-plans/weekly" element={<ProtectedRoute user={user}><WeeklyMealPlanPage /></ProtectedRoute>} />
 
       {/* 아직 실제 기능 화면이 없는 주소는 공통 준비 중 화면을 사용합니다. */}
       <Route path="/prices" element={<ProtectedRoute user={user}><PriceForecastPage /></ProtectedRoute>} />

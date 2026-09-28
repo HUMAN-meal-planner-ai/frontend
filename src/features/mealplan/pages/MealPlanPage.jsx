@@ -3,24 +3,29 @@ import { useNavigate } from 'react-router-dom'
 import { getMenus, getWeeklyMealPlan, reconfigureMealPlan, saveMealPlan } from '../api/mealPlanApi'
 import './MealPlanPage.css'
 
+function formatLocalDate(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function getMonday(date = new Date()) {
   const next = new Date(date)
   const day = next.getDay()
   const difference = day === 0 ? -6 : 1 - day
   next.setDate(next.getDate() + difference)
-  return next.toISOString().slice(0, 10)
+  return formatLocalDate(next)
 }
 
 const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일']
-const SLOT_ORDER = ['RICE', 'SOUP', 'MAIN', 'SIDE', 'KIMCHI']
-
-const normalizeSlot = (slot) => {
-  if (!slot) return 'MAIN'
-  const value = typeof slot === 'string' ? slot.toUpperCase() : slot
-  return SLOT_ORDER.includes(value) ? value : 'MAIN'
+const MEAL_TYPE_LABELS = {
+  BREAKFAST: '조식',
+  LUNCH: '중식',
+  DINNER: '석식',
 }
 
-const toDateString = (date) => date.toISOString().slice(0, 10)
+const toDateString = (date) => formatLocalDate(date)
 
 const getMonthCalendar = (monthDate) => {
   const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1)
@@ -63,15 +68,6 @@ function MealPlanPage({ onLogout }) {
       .catch(() => setError('메뉴를 불러오지 못했습니다. 백엔드가 실행 중인지 확인해 주세요.'))
   }, [])
 
-  useEffect(() => {
-    getWeeklyMealPlan(weekStartDate)
-      .then(({ data }) => {
-        setPlan(data)
-        setPlansByWeek((current) => ({ ...current, [weekStartDate]: data }))
-      })
-      .catch(() => {})
-  }, [weekStartDate])
-
   const menuById = useMemo(() => {
     return menus.reduce((acc, menu) => {
       acc[menu.menuId] = menu
@@ -83,30 +79,35 @@ function MealPlanPage({ onLogout }) {
     const allMeals = Object.values(plansByWeek).flatMap((weeklyPlan) => weeklyPlan?.meals || [])
     return allMeals.reduce((acc, meal) => {
       const key = meal.mealDate
-      const slot = normalizeSlot(meal.slot)
-      if (!acc[key]) acc[key] = {}
-      acc[key][slot] = meal
+      if (!acc[key]) acc[key] = []
+      acc[key].push(meal)
       return acc
     }, {})
   }, [plansByWeek])
 
   const monthDays = useMemo(() => getMonthCalendar(displayMonth), [displayMonth])
 
-  const loadWeekly = async (date = weekStartDate) => {
-    setLoading(true)
-    setError('')
-    try {
-      const { data } = await getWeeklyMealPlan(date)
-      setWeekStartDate(date)
-      setPlan(data)
-      setPlansByWeek((current) => ({ ...current, [date]: data }))
-      setMessage('저장된 주간 식단을 불러왔습니다.')
-    } catch (requestError) {
-      setError(requestError.response?.data?.message || '해당 주의 식단을 불러오지 못했습니다.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const monthWeekStarts = useMemo(() => {
+    return Array.from({ length: 5 }, (_, weekIndex) => monthDays[weekIndex * 7].date)
+  }, [monthDays])
+
+  useEffect(() => {
+    let active = true
+    Promise.allSettled(monthWeekStarts.map((date) => getWeeklyMealPlan(date)))
+      .then((results) => {
+        if (!active) return
+        const loadedPlans = {}
+        results.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            loadedPlans[monthWeekStarts[index]] = result.value.data
+          }
+        })
+        setPlansByWeek(loadedPlans)
+        const currentWeekPlan = loadedPlans[weekStartDate]
+        if (currentWeekPlan) setPlan(currentWeekPlan)
+      })
+    return () => { active = false }
+  }, [monthWeekStarts, weekStartDate])
 
   const runRequest = async (request, successMessage) => {
     setLoading(true)
@@ -132,7 +133,12 @@ function MealPlanPage({ onLogout }) {
   const reconfigure = () => runRequest(() => reconfigureMealPlan(requestData), '7일 식단을 재구성했습니다.')
   const save = () => {
     if (!plan) return setError('먼저 식단을 재구성하거나 불러와 주세요.')
-    const meals = plan.meals.map(({ mealDate, slot, menuId }) => ({ mealDate, slot, menuId }))
+    const meals = plan.meals.map(({ mealDate, mealType, slot, menuId }) => ({
+      mealDate,
+      mealType: mealType || 'LUNCH',
+      slot,
+      menuId,
+    }))
     runRequest(() => saveMealPlan({ weekStartDate, mealCount: Number(mealCount), meals }), '식단을 저장했습니다.')
   }
 
@@ -148,7 +154,7 @@ function MealPlanPage({ onLogout }) {
         <div className="meal-plan-heading">
           <div>
             <p className="eyebrow">WEEKLY MEAL PLAN</p>
-            <h1>이번 주 식단</h1>
+            <h1>이번 달 식단</h1>
             <p>가격 기준을 정하고, 메뉴를 조합한 뒤 저장하세요.</p>
           </div>
           <span className="menu-count">메뉴 {menus.length}개 연결됨</span>
@@ -172,7 +178,13 @@ function MealPlanPage({ onLogout }) {
             <button className="primary-button" onClick={reconfigure} disabled={loading}>
               {loading ? '처리 중...' : '7일 재구성'}
             </button>
-            <button className="secondary-button" onClick={loadWeekly} disabled={loading}>주간 식단 조회</button>
+            <button
+              className="secondary-button"
+              onClick={() => navigate(`/meal-plans/weekly?weekStartDate=${weekStartDate}`)}
+              disabled={loading}
+            >
+              주간 식단 조회
+            </button>
             <button className="secondary-button" onClick={save} disabled={loading}>식단 저장</button>
           </div>
         </section>
@@ -199,17 +211,26 @@ function MealPlanPage({ onLogout }) {
                 <div className="month-week-row" key={rowStart}>
                   <div className="month-day-cards">
                     {days.map(({ date, day, isCurrentMonth }) => {
-                      const meals = groupedMeals[date] || {}
-                      const mealNames = SLOT_ORDER.map((slot) => meals[slot]).filter(Boolean).slice(0, 3).map((meal) => menuById[meal.menuId]?.name || meal.menuName)
+                      const meals = groupedMeals[date] || []
                       return (
                         <div className={`month-day-card${isCurrentMonth ? '' : ' outside-month'}`} key={date}>
                           <strong>{day}</strong>
-                          {mealNames.map((name, index) => <span key={`${date}-${index}`}>{name}</span>)}
+                          {meals.slice(0, 3).map((meal, index) => {
+                            const menuName = menuById[meal.menuId]?.menuName || meal.menuName || '메뉴 정보 없음'
+                            const mealType = MEAL_TYPE_LABELS[meal.mealType] || meal.mealType || '식사'
+                            return <span key={`${date}-${index}`}>{mealType}: {menuName}</span>
+                          })}
                         </div>
                       )
                     })}
                   </div>
-                  <button className="week-query-button" onClick={() => loadWeekly(rowStart)} disabled={loading}>주간 조회</button>
+                  <button
+                    className="week-query-button"
+                    onClick={() => navigate(`/meal-plans/weekly?weekStartDate=${rowStart}`)}
+                    disabled={loading}
+                  >
+                    주간 조회
+                  </button>
                 </div>
               )
             })}
