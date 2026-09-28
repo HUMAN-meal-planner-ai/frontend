@@ -12,6 +12,7 @@ export default function MenuListPage() {
 
   const [query, setQuery] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
+  const [searchResults, setSearchResults] = useState(null)
   const [page, setPage] = useState(1)
 
   const [loading, setLoading] = useState(true)
@@ -48,31 +49,37 @@ export default function MenuListPage() {
   const handleReset = () => {
     setQuery('')
     setSearchKeyword('')
+    setSearchResults(null)
     setPage(1)
   }
 
-  const handleSearch = (event) => {
+  const handleSearch = async (event) => {
     event.preventDefault()
 
-    setSearchKeyword(query)
-    setPage(1)
+    const keyword = query.trim()
+
+    if (!keyword) {
+      setSearchResults(null)
+      setPage(1)
+      return
+    }
+
+    try {
+      const response = await api.get('/api/menus/search', {
+        params: {
+          keyword,
+        },
+      })
+
+      setSearchResults(response.data)
+      setSearchKeyword(keyword)
+      setPage(1)
+    } catch (error) {
+      setError('메뉴 검색에 실패했습니다.')
+    }
   }
 
-  const normalizedKeyword =
-    searchKeyword.trim().toLowerCase()
-
-  const filteredMenus = menus.filter((menu) =>
-    [
-      displayMenuName(menu.menuName),
-      menu.menuCode,
-      menu.mainCategory,
-      menu.subCategory,
-    ].some((value) =>
-      (value ?? '')
-        .toLowerCase()
-        .includes(normalizedKeyword)
-    )
-  )
+  const filteredMenus = searchResults ?? menus
 
   const totalPages =
     Math.ceil(filteredMenus.length / pageSize)
@@ -188,7 +195,7 @@ export default function MenuListPage() {
               <input
                 type="text"
                 aria-label="일반 메뉴 검색어"
-                placeholder="메뉴명, 메뉴 코드, 분류를 검색하세요"
+                placeholder="메뉴명, 식재료, 메뉴 코드, 분류를 검색하세요"
                 value={query}
 
                 onChange={(event) => {
@@ -198,6 +205,7 @@ export default function MenuListPage() {
 
                   if (!value.trim()) {
                     setSearchKeyword('')
+                    setSearchResults(null)
                     setPage(1)
                   }
                 }}
@@ -672,8 +680,8 @@ export default function MenuListPage() {
                                   ingredient
                                     .unitPrice != null
                                     ? `${Number(
-                                        ingredient.unitPrice
-                                      ).toLocaleString()}원`
+                                      ingredient.unitPrice
+                                    ).toLocaleString()}원`
                                     : '-'
                                 }
                               </td>
