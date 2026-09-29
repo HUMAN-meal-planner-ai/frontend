@@ -1,4 +1,6 @@
+import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
+import { getYearOverYearBargains } from '../api/landingApi'
 
 /**
  * 첫 화면 상단 메뉴 설정입니다.
@@ -47,21 +49,38 @@ const serviceCards = [
   },
 ]
 
-/**
- * KAMIS 당일 가격 API가 연결되기 전 화면 구성을 확인하기 위한 예시 데이터입니다.
- * 추후 API 연동 시 이 배열을 서버 응답값으로 교체하면 카드 UI를 그대로 사용할 수 있습니다.
- */
-const valueProduceItems = [
-  { name: '애호박', category: '채소류', unit: '1개', currentPrice: '1,480원', lastYearPrice: '2,120원', savingRate: 30, accent: 'leaf', mark: '호박' },
-  { name: '대파', category: '채소류', unit: '1kg', currentPrice: '2,960원', lastYearPrice: '3,740원', savingRate: 21, accent: 'green', mark: '대파' },
-  { name: '감자', category: '식량작물', unit: '1kg', currentPrice: '2,380원', lastYearPrice: '2,920원', savingRate: 18, accent: 'sand', mark: '감자' },
-  { name: '사과', category: '과일류', unit: '10개', currentPrice: '19,800원', lastYearPrice: '22,400원', savingRate: 12, accent: 'rose', mark: '사과' },
-]
+const produceAccents = ['leaf', 'green', 'sand', 'rose']
+const formatPrice = (value) => `${new Intl.NumberFormat('ko-KR').format(Number(value))}원`
+const formatDate = (value) => value ? value.replaceAll('-', '.') : '-'
 
 /** 공개 첫 화면입니다. 인증 화면과 분리하고 주요 기능 진입점을 한곳에 모았습니다. */
 export default function LandingPage({ user, onLogout }) {
   const accountPage = user?.role === 'ADMIN' ? '/admin' : user?.role === 'MANAGER' ? '/manager' : '/'
   const accountLabel = user?.role === 'ADMIN' ? '관리자 페이지' : user?.role === 'MANAGER' ? '시설 관리' : '내 대시보드'
+  const [marketData, setMarketData] = useState({ asOfDate: null, comparisonDate: null, items: [] })
+  const [marketLoading, setMarketLoading] = useState(true)
+  const [marketError, setMarketError] = useState('')
+
+  useEffect(() => {
+    let active = true
+    getYearOverYearBargains()
+      .then((data) => {
+        if (active) setMarketData(data)
+      })
+      .catch(() => {
+        if (active) setMarketError('가격 비교 데이터를 불러오지 못했습니다.')
+      })
+      .finally(() => {
+        if (active) setMarketLoading(false)
+      })
+    return () => { active = false }
+  }, [])
+
+  const valueProduceItems = useMemo(() => marketData.items || [], [marketData.items])
+  const maximumSavingRate = useMemo(
+    () => valueProduceItems.reduce((maximum, item) => Math.max(maximum, Number(item.savingRatePercent)), 0),
+    [valueProduceItems],
+  )
 
   return (
     <main className="landing-page">
@@ -92,10 +111,6 @@ export default function LandingPage({ user, onLogout }) {
       </header>
 
 
-      {/*
-        KAMIS 당일 가격 API가 연결될 위치를 미리 구성한 정적 화면입니다.
-        현재 숫자는 디자인 확인용 예시이며 실제 시세로 사용하지 않습니다.
-      */}
       <section className="market-section" id="market-prices">
         <div className="market-heading">
           <div>
@@ -105,7 +120,7 @@ export default function LandingPage({ user, onLogout }) {
           <div className="market-intro">
             <span className="market-source-badge">KAMIS 가격정보 기반</span>
             <p>전년도 같은 시기의 가격과 비교해 상대적으로 저렴한 품목을 먼저 보여드려요.</p>
-            <small>2026.09.21 기준 · 현재는 화면 확인용 예시 데이터입니다.</small>
+            <small>{formatDate(marketData.asOfDate)} 기준 · 전년 비교일 {formatDate(marketData.comparisonDate)}</small>
           </div>
         </div>
 
@@ -125,28 +140,33 @@ export default function LandingPage({ user, onLogout }) {
             </div>
             <div className="market-summary-foot">
               <span>최대 절감률</span>
-              <strong>30%↓</strong>
+              <strong>{maximumSavingRate}%↓</strong>
             </div>
           </article>
 
-          <div className="produce-grid" aria-label="전년 대비 저렴한 농산물 예시">
+          <div className="produce-grid" aria-label="전년 대비 저렴한 농산물">
+            {marketLoading && <p className="form-message" role="status">가격 비교 데이터를 불러오고 있습니다.</p>}
+            {!marketLoading && marketError && <p className="form-message error-message" role="alert">{marketError}</p>}
+            {!marketLoading && !marketError && valueProduceItems.length === 0 && (
+              <p className="form-message">전년과 비교할 수 있는 가격 데이터가 아직 없습니다.</p>
+            )}
             {valueProduceItems.map((item, index) => (
-              <article className="produce-card" key={item.name}>
-                <div className={`produce-visual ${item.accent}`} aria-hidden="true">
-                  <span>{item.mark}</span>
+              <article className="produce-card" key={item.seriesId}>
+                <div className={`produce-visual ${produceAccents[index % produceAccents.length]}`} aria-hidden="true">
+                  <span>{item.ingredientName}</span>
                   <i>{String(index + 1).padStart(2, '0')}</i>
                 </div>
                 <div className="produce-card-body">
                   <div className="produce-card-head">
-                    <div><small>{item.category}</small><h3>{item.name}</h3></div>
-                    <span className="saving-badge">전년 대비 {item.savingRate}%↓</span>
+                    <div><small>{item.category}</small><h3>{item.ingredientName}</h3></div>
+                    <span className="saving-badge">전년 대비 {item.savingRatePercent}%↓</span>
                   </div>
                   <div className="produce-price-row">
-                    <div><small>오늘 가격</small><strong>{item.currentPrice}</strong><span>/ {item.unit}</span></div>
-                    <div><small>전년도 가격</small><del>{item.lastYearPrice}</del></div>
+                    <div><small>최근 가격</small><strong>{formatPrice(item.currentPrice)}</strong><span>/ {item.unit}</span></div>
+                    <div><small>전년도 가격</small><del>{formatPrice(item.previousYearPrice)}</del></div>
                   </div>
-                  <div className="saving-meter" aria-label={`전년 대비 ${item.savingRate}% 저렴`}>
-                    <i style={{ width: `${item.savingRate}%` }} />
+                  <div className="saving-meter" aria-label={`전년 대비 ${item.savingRatePercent}% 저렴`}>
+                    <i style={{ width: `${Math.min(Number(item.savingRatePercent), 100)}%` }} />
                   </div>
                 </div>
               </article>
@@ -156,7 +176,7 @@ export default function LandingPage({ user, onLogout }) {
 
         <div className="market-note">
           <span>가격 비교 안내</span>
-          <p>품목·등급·시장·단위에 따라 가격이 달라질 수 있습니다. 실제 서비스에서는 KAMIS API의 당일 데이터와 전년도 비교 기준을 함께 표시할 예정입니다.</p>
+          <p>DB에 저장된 KAMIS 가격 중 가장 최근 기준일과 전년도 비교일의 동일 품목·품종·등급·시장 가격을 비교합니다.</p>
         </div>
       </section>
 
