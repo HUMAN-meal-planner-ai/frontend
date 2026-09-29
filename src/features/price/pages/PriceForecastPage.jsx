@@ -107,7 +107,7 @@ export default function PriceForecastPage() {
   return (
     <main className="price-page">
       <header className="price-page-header">
-        <Link to="/home" className="price-logo">MEAL<span>FIT</span></Link>
+        <Link to="/" className="price-logo">MEAL<span>FIT</span></Link>
         <nav aria-label="주요 메뉴">
           <Link to="/meal-plans">식단 관리</Link>
           <Link to="/budget">예산 분석</Link>
