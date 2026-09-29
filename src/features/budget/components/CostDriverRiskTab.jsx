@@ -1,4 +1,4 @@
-import { formatCurrency, formatWon, checkIsCostIncrease } from '../utils/budgetUtils';
+﻿import { formatCurrency, formatWon, checkIsCostIncrease } from '../utils/budgetUtils';
 
 // 메뉴 위험도 태그 렌더링
 const renderRiskBadge = (riskLevel) => {
@@ -128,7 +128,7 @@ export default function CostDriverRiskTab({
                               e.stopPropagation();
                               onOpenReplacementModal(hc);
                             }}
-                            title="[BUDG-005] 대체 메뉴 적용 전후 비용 차이 및 절감액 분석"
+                            title="대체 메뉴 적용 전후 비용 차이 및 절감액 분석"
                           >
                             🔄 대체 비교
                           </button>
@@ -215,7 +215,7 @@ export default function CostDriverRiskTab({
                           onOpenReplacementModal(c);
                         }}
                       >
-                        🔄 대체 메뉴 절감액 분석 (BUDG-005)
+                        🔄 대체 메뉴 절감액 분석
                       </button>
                     </div>
                   )}
@@ -329,7 +329,7 @@ export default function CostDriverRiskTab({
                     futureCostPerPerson: selectedMenuRisk?.futureCostPerPerson || selectedDriver?.futureCostPerPerson,
                   })}
                 >
-                  🔄 대체 메뉴 절감액 분석 (BUDG-005)
+                  🔄 대체 메뉴 절감액 분석
                 </button>
               )}
             </div>
