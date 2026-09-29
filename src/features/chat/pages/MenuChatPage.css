@@ -264,4 +264,7 @@
   .menu-chat-bubble {
     max-width: 84%;
   }
+  .menu-chat-bubble {
+    white-space: pre-wrap;
+  }
 }

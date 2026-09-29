@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import './MenuChatPage.css'
 
 const TOKEN_KEY = 'mealfit_access_token'
-
+let answer = ''
 const AI_API_URL = (
   import.meta.env.VITE_AI_API_URL ||
   'http://127.0.0.1:8000'
@@ -24,7 +24,7 @@ export default function MenuChatPage() {
     {
       id: 1,
       role: 'assistant',
-      text: '안녕하세요! MEALFIT AI입니다. 원하는 메뉴 조건을 자연스럽게 입력해 주세요.',
+      text: '안녕하세요! MEALFIT AI입니다. 원하는 메뉴 조건을 입력해 주세요.',
     },
   ])
 
@@ -90,46 +90,54 @@ export default function MenuChatPage() {
         )
       }
 
-      let answer = ''
+      const validMenus = data.menus.filter((menu) => {
+  if (
+    menu.cost_per_person === null ||
+    menu.cost_per_person === undefined
+  ) {
+    return true
+  }
 
-      if (data.menus.length === 0) {
-        answer =
-          '조건에 맞는 메뉴를 찾지 못했습니다.'
-      } else {
-        const menuLines = data.menus.map(
-          (menu, index) => {
-            let line =
-              `${index + 1}. ${menu.name}`
+  const cost = Number(menu.cost_per_person)
 
-            if (menu.main_category) {
-              line += ` · ${menu.main_category}`
-            }
+  return !Number.isNaN(cost) && cost > 0
+})
 
-            if (menu.sub_category) {
-              line += ` / ${menu.sub_category}`
-            }
+const topMenus = validMenus.slice(0, 3)
 
-            if (
-              menu.cost_per_person !== null &&
-              menu.cost_per_person !== undefined
-            ) {
-              line +=
-                ` · 1인 원가 ${Math.round(
-                  menu.cost_per_person
-                ).toLocaleString()}원`
-            }
+if (topMenus.length === 0) {
+  answer =
+    '조건에 맞는 메뉴 중 가격 데이터가 있는 메뉴를 찾지 못했습니다.'
+} else {
+  const menuLines = topMenus.map((menu, index) => {
+    const category = [
+      menu.main_category,
+      menu.sub_category,
+    ]
+      .filter(Boolean)
+      .join(' / ')
 
-            return line
-          }
-        )
+    const cost =
+      menu.cost_per_person !== null &&
+      menu.cost_per_person !== undefined
+        ? `${Number(
+            menu.cost_per_person
+          ).toLocaleString()}원`
+        : '가격 정보 없음'
 
-        answer = [
-          '조건에 맞는 메뉴를 찾았어요.',
-          '',
-          ...menuLines,
-        ].join('\n')
-      }
+    return [
+      `${index + 1}. ${menu.name}`,
+      `분류 · ${category}`,
+      `1인 원가 · ${cost}`,
+    ].join('\n')
+  })
 
+  answer = [
+    '조건에 맞는 메뉴를 찾았어요.',
+    '',
+    ...menuLines.map((menu) => `${menu}\n`),
+  ].join('\n')
+}
       setMessages((current) => [
         ...current,
         {
@@ -206,21 +214,24 @@ export default function MenuChatPage() {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`menu-chat-message ${
-                  message.role === 'user'
+                className={`menu-chat-message ${message.role === 'user'
                     ? 'menu-chat-message-user'
                     : 'menu-chat-message-ai'
-                }`}
+                  }`}
               >
-                {message.role ===
-                  'assistant' && (
+                {message.role === 'assistant' && (
                   <div className="menu-chat-avatar">
                     ✦
                   </div>
                 )}
 
                 <div className="menu-chat-bubble">
-                  {message.text}
+                  {message.text.split('\n').map((line, index) => (
+                    <span key={index}>
+                      {line}
+                      <br />
+                    </span>
+                  ))}
                 </div>
               </div>
             ))}
@@ -251,9 +262,7 @@ export default function MenuChatPage() {
                       key={question}
                       type="button"
                       onClick={() =>
-                        handleExampleClick(
-                          question
-                        )
+                        handleExampleClick(question)
                       }
                     >
                       {question}
@@ -273,9 +282,7 @@ export default function MenuChatPage() {
                 rows={1}
                 value={input}
                 onChange={(event) =>
-                  setInput(
-                    event.target.value
-                  )
+                  setInput(event.target.value)
                 }
                 placeholder="예: 3000원 이하 돼지고기 주찬 추천해줘"
                 disabled={loading}
