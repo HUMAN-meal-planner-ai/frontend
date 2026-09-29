@@ -68,13 +68,6 @@ function MealPlanPage({ onLogout }) {
       .catch(() => setError('메뉴를 불러오지 못했습니다. 백엔드가 실행 중인지 확인해 주세요.'))
   }, [])
 
-  const menuById = useMemo(() => {
-    return menus.reduce((acc, menu) => {
-      acc[menu.menuId] = menu
-      return acc
-    }, {})
-  }, [menus])
-
   const groupedMeals = useMemo(() => {
     const allMeals = Object.values(plansByWeek).flatMap((weeklyPlan) => weeklyPlan?.meals || [])
     return allMeals.reduce((acc, meal) => {
@@ -212,14 +205,16 @@ function MealPlanPage({ onLogout }) {
                   <div className="month-day-cards">
                     {days.map(({ date, day, isCurrentMonth }) => {
                       const meals = groupedMeals[date] || []
+                          const mealTypes = [...new Set(meals
+                            .filter((meal) => meal.menuItems?.length || meal.menuId != null || meal.menuName?.trim())
+                            .map((meal) => meal.mealType))]
+                            .sort((first, second) => ['BREAKFAST', 'LUNCH', 'DINNER'].indexOf(first) - ['BREAKFAST', 'LUNCH', 'DINNER'].indexOf(second))
                       return (
                         <div className={`month-day-card${isCurrentMonth ? '' : ' outside-month'}`} key={date}>
                           <strong>{day}</strong>
-                          {meals.slice(0, 3).map((meal, index) => {
-                            const menuName = menuById[meal.menuId]?.menuName || meal.menuName || '메뉴 정보 없음'
-                            const mealType = MEAL_TYPE_LABELS[meal.mealType] || meal.mealType || '식사'
-                            return <span key={`${date}-${index}`}>{mealType}: {menuName}</span>
-                          })}
+                              {mealTypes.map((mealType) => (
+                                <span key={`${date}-${mealType}`}>{MEAL_TYPE_LABELS[mealType] || mealType || '식사'}</span>
+                              ))}
                         </div>
                       )
                     })}
