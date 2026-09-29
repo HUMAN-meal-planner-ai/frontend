@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import './MenuChatPage.css'
 
 const TOKEN_KEY = 'mealfit_access_token'
-let answer = ''
+
 const AI_API_URL = (
   import.meta.env.VITE_AI_API_URL ||
   'http://127.0.0.1:8000'
@@ -25,6 +25,7 @@ export default function MenuChatPage() {
       id: 1,
       role: 'assistant',
       text: '안녕하세요! MEALFIT AI입니다. 원하는 메뉴 조건을 입력해 주세요.',
+      menus: [],
     },
   ])
 
@@ -39,6 +40,7 @@ export default function MenuChatPage() {
       id: Date.now(),
       role: 'user',
       text: question,
+      menus: [],
     }
 
     setMessages((current) => [
@@ -91,59 +93,35 @@ export default function MenuChatPage() {
       }
 
       const validMenus = data.menus.filter((menu) => {
-  if (
-    menu.cost_per_person === null ||
-    menu.cost_per_person === undefined
-  ) {
-    return true
-  }
+        if (
+          menu.cost_per_person === null ||
+          menu.cost_per_person === undefined
+        ) {
+          return true
+        }
 
-  const cost = Number(menu.cost_per_person)
+        const cost = Number(menu.cost_per_person)
 
-  return !Number.isNaN(cost) && cost > 0
-})
+        return (
+          !Number.isNaN(cost) &&
+          cost > 0
+        )
+      })
 
-const topMenus = validMenus.slice(0, 3)
+      const topMenus = validMenus.slice(0, 3)
 
-if (topMenus.length === 0) {
-  answer =
-    '조건에 맞는 메뉴 중 가격 데이터가 있는 메뉴를 찾지 못했습니다.'
-} else {
-  const menuLines = topMenus.map((menu, index) => {
-    const category = [
-      menu.main_category,
-      menu.sub_category,
-    ]
-      .filter(Boolean)
-      .join(' / ')
+      const answer =
+        topMenus.length === 0
+          ? '조건에 맞는 메뉴를 찾지 못했습니다.'
+          : '조건에 맞는 메뉴를 찾았어요.'
 
-    const cost =
-      menu.cost_per_person !== null &&
-      menu.cost_per_person !== undefined
-        ? `${Number(
-            menu.cost_per_person
-          ).toLocaleString()}원`
-        : '가격 정보 없음'
-
-    return [
-      `${index + 1}. ${menu.name}`,
-      `분류 · ${category}`,
-      `1인 원가 · ${cost}`,
-    ].join('\n')
-  })
-
-  answer = [
-    '조건에 맞는 메뉴를 찾았어요.',
-    '',
-    ...menuLines.map((menu) => `${menu}\n`),
-  ].join('\n')
-}
       setMessages((current) => [
         ...current,
         {
           id: Date.now() + 1,
           role: 'assistant',
           text: answer,
+          menus: topMenus,
         },
       ])
     } catch (error) {
@@ -157,6 +135,7 @@ if (topMenus.length === 0) {
           text:
             error.message ||
             '메뉴 검색 중 오류가 발생했습니다.',
+          menus: [],
         },
       ])
     } finally {
@@ -214,10 +193,11 @@ if (topMenus.length === 0) {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`menu-chat-message ${message.role === 'user'
+                className={`menu-chat-message ${
+                  message.role === 'user'
                     ? 'menu-chat-message-user'
                     : 'menu-chat-message-ai'
-                  }`}
+                }`}
               >
                 {message.role === 'assistant' && (
                   <div className="menu-chat-avatar">
@@ -226,12 +206,57 @@ if (topMenus.length === 0) {
                 )}
 
                 <div className="menu-chat-bubble">
-                  {message.text.split('\n').map((line, index) => (
-                    <span key={index}>
-                      {line}
-                      <br />
-                    </span>
-                  ))}
+                  <div className="menu-chat-message-text">
+                    {message.text}
+                  </div>
+
+                  {message.menus?.length > 0 && (
+                    <div className="menu-chat-menu-list">
+                      {message.menus.map((menu, index) => {
+                        const category = [
+                          menu.main_category,
+                          menu.sub_category,
+                        ]
+                          .filter(Boolean)
+                          .join(' / ')
+
+                        const cost =
+                          menu.cost_per_person !== null &&
+                          menu.cost_per_person !== undefined
+                            ? `${Number(
+                                menu.cost_per_person
+                              ).toLocaleString()}원`
+                            : '가격 정보 없음'
+
+                        return (
+                          <div
+                            key={menu.menu_id}
+                            className="menu-chat-menu-item"
+                          >
+                            <div className="menu-chat-menu-title">
+                              {index + 1}. {menu.name}
+                            </div>
+
+                            <div className="menu-chat-menu-info">
+                              분류 · {category || '분류 정보 없음'}
+                            </div>
+
+                            <div className="menu-chat-menu-info">
+                              1인 원가 · {cost}
+                            </div>
+
+                            <Link
+                              to={`/menus?menuId=${menu.menu_id}`}
+                              className="menu-chat-menu-button"
+                            >
+                              메뉴에서 보기
+                              <span>›</span>
+                            </Link>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -292,6 +317,7 @@ if (topMenus.length === 0) {
                     !event.shiftKey
                   ) {
                     event.preventDefault()
+
                     event.currentTarget.form
                       ?.requestSubmit()
                   }

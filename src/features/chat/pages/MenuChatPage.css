@@ -267,4 +267,62 @@
   .menu-chat-bubble {
     white-space: pre-wrap;
   }
+  
+}
+.menu-chat-message-text {
+  white-space: pre-wrap;
+}
+
+.menu-chat-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.menu-chat-menu-item {
+  padding: 14px;
+  border: 1px solid #e7eaf0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.menu-chat-menu-title {
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.menu-chat-menu-info {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #667085;
+}
+
+.menu-chat-menu-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-top: 12px;
+  padding: 9px 12px;
+
+  border-radius: 8px;
+
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.menu-chat-menu-button:hover {
+  background: #dbeafe;
+}
+
+.menu-chat-menu-button span {
+  font-size: 18px;
+  line-height: 1;
 }
