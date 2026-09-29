@@ -30,6 +30,16 @@ export async function getAdminSystemStatus() {
 }
 
 /**
+ * ADMIN-004 가격 데이터 운영 현황을 조회합니다.
+ * 출처별 시계열·저장 건수와 최신 기준일을 백엔드에서 집계해 반환합니다.
+ */
+export async function getAdminPriceDataStatus() {
+  // 공통 Axios 인스턴스가 저장된 JWT와 API 기본 주소를 처리하므로 경로만 지정합니다.
+  const { data } = await api.get('/api/admin/price-data')
+  return data
+}
+
+/**
  * ADMIN-006 오류 로그 목록을 페이지 단위로 조회합니다.
  * resolved를 전달하지 않으면 전체, false이면 미처리, true이면 처리 완료 로그만 반환됩니다.
  * Spring Data Page 응답을 그대로 반환해 content, number, totalPages, last를 화면에서 사용합니다.
