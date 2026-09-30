@@ -1,4 +1,4 @@
-import { formatCurrency, formatWon, checkIsExceeded, getExceededAmount } from '../utils/budgetUtils';
+import { calculatePriceScore, formatCurrency, formatWon, checkIsExceeded, getExceededAmount } from '../utils/budgetUtils';
 
 export default function MenuCostOverviewTab({
   costMode,
@@ -11,6 +11,10 @@ export default function MenuCostOverviewTab({
   selectedMenuDetail,
   detailLoading,
 }) {
+  const priceScore = menuCosts.length
+    ? calculatePriceScore(summary.totalCurrentCost, summary.totalTargetCost)
+    : null;
+
   return (
     <div className="tab-fade-in">
       {/* 상단 모드 전환 & 지표 카드 */}
@@ -64,6 +68,20 @@ export default function MenuCostOverviewTab({
           </strong>
           <span className="card-sub-info">
             {summary.totalExceeded > 0 ? '원가 절감 및 대체 품목 검토 권장' : '모든 메뉴가 목표 단가 내에 편성됨'}
+          </span>
+        </div>
+
+        <div className="budget-stat-card price-score-card">
+          <span className="card-kicker">가격 점수</span>
+          <div className="price-score-value">
+            <strong>{priceScore == null ? '-' : priceScore.toFixed(1)}</strong>
+            <span>/ 100점</span>
+          </div>
+          <span className="price-score-status">
+            {priceScore == null ? '원가 데이터 없음' : priceScore === 100 ? '목표 예산 이내' : priceScore === 0 ? '점수 하한' : '목표 예산 초과'}
+          </span>
+          <span className="card-sub-info">
+            {costMode === 'CURRENT' ? '현재 원가' : '미래 예측 원가'} 합계 기준 · 예산 이하 100점, 초과율 1%당 1점 감점
           </span>
         </div>
       </div>

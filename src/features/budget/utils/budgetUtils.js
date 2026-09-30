@@ -23,6 +23,15 @@ export const getExceededAmount = (item, fallbackTarget) => {
   return cost > target ? cost - target : 0;
 };
 
+export const calculatePriceScore = (actualCost, targetBudget) => {
+  const actual = Number(actualCost);
+  const target = Number(targetBudget);
+  if (!Number.isFinite(actual) || !Number.isFinite(target) || actual < 0 || target < 0) return 0;
+  if (actual <= target) return 100;
+  if (target === 0) return 0;
+  return Math.max(0, 100 - ((actual - target) / target) * 100);
+};
+
 export const checkIsIncreased = (comp) => {
   if (!comp) return false;
   if (comp.isIncreased !== undefined) return Boolean(comp.isIncreased);

@@ -1,0 +1,35 @@
+.my-page { min-height: 100vh; background: #f4f8f5; color: #1e362a; }
+.my-page-header { display: flex; height: 68px; align-items: center; justify-content: space-between; padding: 0 max(24px, calc((100vw - 1120px) / 2)); border-bottom: 1px solid #dfe8e2; background: #fff; }
+.my-page-brand { color: #173728; font-size: 20px; font-weight: 800; text-decoration: none; }
+.my-page-brand span { color: #2f9b64; }
+.my-page-header nav { display: flex; align-items: center; gap: 18px; }
+.my-page-header nav a, .my-page-header nav button { padding: 0; border: 0; background: transparent; color: #476453; font: inherit; font-size: 13px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.my-page-header nav a:hover, .my-page-header nav button:hover { color: #1d8851; }
+.my-page-content { width: min(100% - 40px, 980px); margin: 0 auto; padding: 48px 0 72px; }
+.my-page-eyebrow { margin: 0 0 8px; color: #2f9b64; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.my-page-content > h1 { margin: 0 0 8px; color: #173728; font-size: 34px; font-weight: 800; }
+.my-page-intro { margin: 0 0 28px; color: #6b8276; font-size: 14px; }
+.my-page-section { margin-top: 18px; padding: 24px; border: 1px solid #d9e6de; border-radius: 12px; background: #fff; }
+.my-page-section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #edf4f0; }
+.my-page-section-heading span { color: #2f9b64; font-size: 10px; font-weight: 800; letter-spacing: .06em; }
+.my-page-section-heading h2 { margin: 4px 0 0; color: #1d3a2b; font-size: 19px; font-weight: 800; }
+.my-page-details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 24px; margin: 0; }
+.my-page-details > div { min-width: 0; }
+.my-page-details dt { margin-bottom: 5px; color: #7b9084; font-size: 11px; font-weight: 700; }
+.my-page-details dd { margin: 0; overflow-wrap: anywhere; color: #254635; font-size: 14px; font-weight: 700; }
+.my-page-details .my-page-budget-value dd { color: #16804e; font-size: 18px; }
+.my-page-budget-formula { margin: 20px 0 0; padding-top: 14px; border-top: 1px solid #edf4f0; color: #72877b; font-size: 12px; }
+.my-page-edit-link, .my-page-empty > a { display: inline-flex; align-items: center; min-height: 36px; margin-top: 16px; padding: 0 13px; border: 1px solid #b8d8c5; border-radius: 7px; color: #287a4d; font-size: 12px; font-weight: 700; text-decoration: none; }
+.my-page-edit-link:hover, .my-page-empty > a:hover { background: #f1f9f4; }
+.my-page-empty { color: #73887c; font-size: 13px; }
+.my-page-error { color: #a73b36; font-size: 13px; }
+.my-page-state { padding: 36px; border: 1px solid #d9e6de; border-radius: 12px; background: #fff; color: #72877b; text-align: center; }
+@media (max-width: 680px) {
+  .my-page-header { padding: 0 16px; }
+  .my-page-header nav { gap: 10px; }
+  .my-page-header nav a, .my-page-header nav button { font-size: 11px; }
+  .my-page-content { width: min(100% - 28px, 980px); padding-top: 32px; }
+  .my-page-content > h1 { font-size: 29px; }
+  .my-page-section { padding: 18px; }
+  .my-page-details { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+}

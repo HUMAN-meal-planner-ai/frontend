@@ -9,6 +9,26 @@
 .weekly-meal-heading h1 { margin: 0 0 8px; color: #173728; font-size: 38px; font-weight: 800; letter-spacing: -1.2px; }
 .weekly-meal-heading p:not(.eyebrow) { margin: 0; color: #6b8276; font-size: 15px; }
 
+.weekly-plan-insights { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 24px; margin: 0 0 20px; padding: 20px 24px; border: 1px solid #d9e6de; border-radius: 14px; background: #fff; }
+.weekly-price-summary { display: flex; align-items: center; gap: 26px; min-width: 0; }
+.weekly-price-score { display: flex; min-width: 150px; flex-direction: column; padding-right: 24px; border-right: 1px solid #e4eee8; }
+.weekly-insight-label, .weekly-price-metrics > div span { color: #72877b; font-size: 12px; font-weight: 700; }
+.weekly-price-score > strong { margin-top: 3px; color: #198052; font-size: 30px; font-weight: 800; line-height: 1.2; }
+.weekly-score-caption { margin-top: 4px; color: #8a9b91; font-size: 11px; }
+.weekly-price-metrics { display: grid; flex: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 18px; }
+.weekly-price-metrics > div { display: flex; flex-direction: column; gap: 4px; }
+.weekly-price-metrics > div strong { color: #244535; font-size: 16px; font-weight: 800; }
+.weekly-price-metrics > p { grid-column: 1 / -1; margin: 2px 0 0; color: #8a9b91; font-size: 11px; line-height: 1.5; }
+.weekly-price-error { grid-column: 1 / -1; margin: 0; color: #a73b36; font-size: 12px; }
+.weekly-facility-profile { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: flex-end; gap: 14px; padding-top: 12px; border-top: 1px solid #edf4f0; }
+.weekly-facility-toggle { min-height: 34px; padding: 0 12px; border: 1px solid #c3dbce; border-radius: 7px; background: #fff; color: #287a4d; font-size: 12px; font-weight: 700; cursor: pointer; }
+.weekly-facility-toggle:hover { border-color: #2f9b64; background: #f3faf5; }
+.weekly-facility-details { display: grid; width: 100%; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px 20px; }
+.weekly-facility-details > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.weekly-facility-details > div span { color: #819388; font-size: 11px; font-weight: 700; }
+.weekly-facility-details > div strong { overflow-wrap: anywhere; color: #294737; font-size: 13px; font-weight: 700; }
+.weekly-facility-details > p { grid-column: 1 / -1; margin: 0; color: #728c7f; font-size: 12px; }
+
 .weekly-header-controls { display: flex; align-items: center; gap: 12px; }
 .weekly-meal-count-box { display: flex; align-items: center; gap: 6px; padding: 0 12px; height: 44px; border: 1px solid #c3dbce; border-radius: 10px; background: #fff; font-size: 13px; color: #3b5748; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
 .weekly-meal-count-box input { width: 56px; border: none; background: transparent; text-align: right; font-size: 15px; font-weight: 700; color: #1e7e4e; outline: none; }
@@ -206,6 +226,10 @@
   .weekly-meal-content { padding: 32px 16px 60px; }
   .weekly-meal-heading { align-items: flex-start; flex-direction: column; }
   .weekly-meal-heading h1 { font-size: 32px; }
+  .weekly-plan-insights { grid-template-columns: 1fr; padding: 18px; }
+  .weekly-price-summary { align-items: flex-start; flex-direction: column; gap: 14px; }
+  .weekly-price-score { min-width: 0; padding: 0; border: 0; }
+  .weekly-facility-toggle { align-self: flex-start; }
   .menu-spec-cards { grid-template-columns: repeat(2, 1fr); }
   .ingredient-section-header { flex-direction: column; }
   .recommend-grid { grid-template-columns: 1fr; }
@@ -214,6 +238,7 @@
 @media (max-width: 680px) {
   .weekly-meal-board { grid-template-columns: 58px repeat(7, 104px); }
   .weekly-board-meal-type, .weekly-board-cell { min-height: 94px; }
+  .weekly-price-metrics { width: 100%; grid-template-columns: 1fr; }
   .menu-spec-cards { grid-template-columns: 1fr; }
 }
 

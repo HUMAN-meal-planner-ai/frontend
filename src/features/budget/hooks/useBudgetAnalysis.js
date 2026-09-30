@@ -24,10 +24,12 @@ import {
   markAllAlertsAsRead,
   verifyWeeklyPlanBudget,
 } from '../api/budgetAutomationApi';
+import { getMyFacility } from '../../account/api/accountApi';
 import {
   getHighCostMenuCandidates,
   getMenuReplacementAnalysis,
   getMenuReplacementDiff,
+  saveMyMonthlyBudget,
 } from '../api/budgetApi';
 import {
   getMondayOfWeek,
@@ -67,6 +69,10 @@ export function useBudgetAnalysis(facilityId = 1) {
   const [budgetUsage, setBudgetUsage] = useState(null);
   const [monthlyPlanCost, setMonthlyPlanCost] = useState(null);
   const [weeklyPlanCost, setWeeklyPlanCost] = useState(null);
+  const [facilityProfile, setFacilityProfile] = useState(null);
+  const [monthlyBudgetSaving, setMonthlyBudgetSaving] = useState(false);
+  const [monthlyBudgetMessage, setMonthlyBudgetMessage] = useState('');
+  const [monthlyBudgetError, setMonthlyBudgetError] = useState('');
   const [highCostData, setHighCostData] = useState(null); // BUDG-003
 
   // 4. 자동화(Automation) & 모달 상태
@@ -151,6 +157,7 @@ export function useBudgetAnalysis(facilityId = 1) {
           unreadCountData,
           alertsData,
           highCostResult,
+          facilityData,
         ] = await Promise.all([
           mode === 'CURRENT'
             ? getAllMenuCosts({ mealCount: count, targetCost: target })
@@ -207,6 +214,10 @@ export function useBudgetAnalysis(facilityId = 1) {
             console.warn('[getHighCostMenuCandidates] 실패:', e);
             return null;
           }),
+          getMyFacility().catch((e) => {
+            console.warn('[getMyFacility] 실패:', e);
+            return null;
+          }),
         ]);
 
         setMenuCosts(costData || []);
@@ -217,6 +228,7 @@ export function useBudgetAnalysis(facilityId = 1) {
         setBudgetUsage(usageData);
         setMonthlyPlanCost(monthlyData);
         setWeeklyPlanCost(weeklyData);
+        setFacilityProfile(facilityData);
         setReplacementCandidates(candidatesData);
         setUnreadAlertCount(unreadCountData?.unreadCount || 0);
         setAlertList(alertsData || []);
@@ -283,6 +295,47 @@ export function useBudgetAnalysis(facilityId = 1) {
       facilityId,
       costMode
     );
+  };
+
+  const monthlyBudgetPreview = monthlyPlanCost && facilityProfile?.targetFoodCost != null
+    ? Number(facilityProfile.targetFoodCost) * Number(monthlyPlanCost.totalMonthlyMealCount || 0)
+    : null;
+  const savedMonthlyBudget = facilityProfile && monthlyPlanCost
+    && facilityProfile.monthlyBudgetMonth === monthlyPlanCost.yearMonth
+    ? facilityProfile.monthlyBudget
+    : null;
+
+  const handleSaveMonthlyBudget = async () => {
+    const month = monthlyPlanCost?.yearMonth;
+    if (!month || !facilityProfile?.facilityId) {
+      setMonthlyBudgetError('시설 및 월간 식단 정보를 확인할 수 없습니다.');
+      return;
+    }
+    if (Number(monthlyPlanCost.totalMonthlyMealCount || 0) < 1) {
+      setMonthlyBudgetError('해당 월에 편성된 식단이 없어 예산을 저장할 수 없습니다.');
+      return;
+    }
+
+    setMonthlyBudgetSaving(true);
+    setMonthlyBudgetError('');
+    setMonthlyBudgetMessage('');
+    try {
+      const savedFacility = await saveMyMonthlyBudget(`${month}-01`);
+      setFacilityProfile(savedFacility);
+      const budgetAmount = Number(savedFacility.monthlyBudget || 0);
+      const totalExpectedCost = Number(monthlyPlanCost.totalMonthlyExpectedCost || 0);
+      setMonthlyPlanCost((previous) => previous ? {
+        ...previous,
+        monthlyBudget: savedFacility.monthlyBudget,
+        projectedRemainingBudget: budgetAmount - totalExpectedCost,
+        budgetUsageRate: budgetAmount > 0 ? Number(((totalExpectedCost / budgetAmount) * 100).toFixed(2)) : 0,
+      } : previous);
+      setMonthlyBudgetMessage(`${month} 월 예산 ${Number(savedFacility.monthlyBudget).toLocaleString()}원이 저장되었습니다.`);
+    } catch (requestError) {
+      setMonthlyBudgetError(requestError.response?.data?.message || '월 예산을 저장하지 못했습니다.');
+    } finally {
+      setMonthlyBudgetSaving(false);
+    }
   };
 
   // 메뉴 선택 핸들러
@@ -450,6 +503,13 @@ export function useBudgetAnalysis(facilityId = 1) {
     budgetUsage,
     monthlyPlanCost,
     weeklyPlanCost,
+    facilityProfile,
+    monthlyBudgetPreview,
+    savedMonthlyBudget,
+    monthlyBudgetSaving,
+    monthlyBudgetMessage,
+    monthlyBudgetError,
+    handleSaveMonthlyBudget,
     highCostData, // BUDG-003
 
     // 자동화(Automation) & 모달 데이터

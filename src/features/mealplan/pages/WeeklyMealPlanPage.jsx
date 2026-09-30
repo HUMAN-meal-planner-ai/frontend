@@ -1,13 +1,21 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { getMenus, getWeeklyMealPlan, saveMealPlan } from '../api/mealPlanApi'
+import { getMenus, getMyFacility, getWeeklyMealPlan, saveMealPlan } from '../api/mealPlanApi'
 import { getMenuCostDetail } from '../../budget/api/costApi'
+import { calculatePriceScore } from '../../budget/utils/budgetUtils'
 import './WeeklyMealPlanPage.css'
 
 const MEAL_TYPE_LABELS = {
   BREAKFAST: '조식',
   LUNCH: '중식',
   DINNER: '석식',
+}
+
+const FACILITY_TYPE_LABELS = {
+  SCHOOL: '학교',
+  COMPANY: '기업',
+  HOSPITAL: '병원',
+  ETC: '기타',
 }
 
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토']
@@ -71,6 +79,12 @@ function WeeklyMealPlanPage() {
   const requestedWeekStart = normalizeMonday(searchParams.get('weekStartDate') || getMonday())
 
   const [plan, setPlan] = useState(null)
+  const [facility, setFacility] = useState(null)
+  const [facilityInfoError, setFacilityInfoError] = useState('')
+  const [isFacilityInfoOpen, setIsFacilityInfoOpen] = useState(false)
+  const [weeklyPriceSummary, setWeeklyPriceSummary] = useState(null)
+  const [weeklyPriceLoading, setWeeklyPriceLoading] = useState(false)
+  const [weeklyPriceError, setWeeklyPriceError] = useState('')
   const [allMenus, setAllMenus] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -117,6 +131,14 @@ function WeeklyMealPlanPage() {
       })
       .catch((requestError) => {
         setMenuLoadError(requestError.response?.data?.message || 'DB 메뉴 목록을 불러오지 못했습니다.')
+      })
+  }, [])
+
+  useEffect(() => {
+    getMyFacility()
+      .then(({ data }) => setFacility(data))
+      .catch((requestError) => {
+        setFacilityInfoError(requestError.response?.data?.message || '시설 가입 정보를 불러오지 못했습니다.')
       })
   }, [])
 
@@ -460,12 +482,79 @@ function WeeklyMealPlanPage() {
         occurrences.push({
           menuId,
           menuName: item.menuName || menuById[menuId]?.menuName || '',
+          mealDate: meal.mealDate,
           mealType: MEAL_TYPES.includes(meal.mealType) ? meal.mealType : 'LUNCH',
         })
       })
     }
     return occurrences
   }, [plan, allMenus])
+
+  useEffect(() => {
+    let active = true
+    const menuIds = [...new Set(weeklyMenuOccurrences.map((item) => item.menuId))]
+    if (!menuIds.length) {
+      setWeeklyPriceSummary(null)
+      setWeeklyPriceError('')
+      setWeeklyPriceLoading(false)
+      return () => { active = false }
+    }
+
+    setWeeklyPriceLoading(true)
+    setWeeklyPriceError('')
+    Promise.allSettled(menuIds.map((menuId) => getMenuCostDetail(menuId, { mealCount: 1 })))
+      .then((results) => {
+        if (!active) return
+        const costByMenuId = new Map()
+        let failedCount = 0
+        results.forEach((result, index) => {
+          if (result.status !== 'fulfilled') {
+            failedCount += 1
+            return
+          }
+          const perPersonCostValue = result.value?.costPerPerson
+          const perPersonCost = Number(perPersonCostValue)
+          if (perPersonCostValue == null || !Number.isFinite(perPersonCost)) {
+            failedCount += 1
+            return
+          }
+          costByMenuId.set(menuIds[index], perPersonCost)
+        })
+
+        const mealSlotCount = new Set(weeklyMenuOccurrences.map((item) => `${item.mealDate}::${item.mealType}`)).size
+        const attendeeCount = Math.max(1, Number(mealCount) || 1)
+        const targetPerPerson = Number(facility?.targetFoodCost)
+        const targetBudget = Number.isFinite(targetPerPerson) ? targetPerPerson * attendeeCount * mealSlotCount : null
+        const actualCostPerPerson = weeklyMenuOccurrences.reduce(
+          (sum, item) => sum + (costByMenuId.get(item.menuId) ?? 0),
+          0
+        )
+        const actualCost = actualCostPerPerson * attendeeCount
+
+        setWeeklyPriceSummary({
+          actualCost,
+          targetBudget,
+          score: failedCount || targetBudget == null
+            ? null
+            : calculatePriceScore(actualCost, targetBudget),
+          mealSlotCount,
+          failedCount,
+        })
+        if (failedCount) {
+          setWeeklyPriceError(`${failedCount}개 메뉴의 원가를 불러오지 못해 가격 점수를 계산할 수 없습니다.`)
+        } else if (targetBudget == null) {
+          setWeeklyPriceError('시설 가입 정보의 목표 식재료비가 없어 가격 점수를 계산할 수 없습니다.')
+        }
+      })
+      .catch(() => {
+        if (active) setWeeklyPriceError('주간 가격 점수를 계산하지 못했습니다.')
+      })
+      .finally(() => {
+        if (active) setWeeklyPriceLoading(false)
+      })
+
+    return () => { active = false }
+  }, [facility?.targetFoodCost, mealCount, weeklyMenuOccurrences])
 
   useEffect(() => {
     let active = true
@@ -656,6 +745,7 @@ function WeeklyMealPlanPage() {
         <button type="button" className="text-button" onClick={() => navigate('/meal-plans')}>← 월간 식단</button>
         <strong>MEAL<span>FIT</span></strong>
         <span className="weekly-meal-label">WEEKLY MENU</span>
+        <button type="button" className="text-button" onClick={() => navigate('/my-page')}>마이페이지</button>
       </header>
 
       <section className="weekly-meal-content">
@@ -718,6 +808,67 @@ function WeeklyMealPlanPage() {
         {/* 주간 식단 그리드 보드 */}
         {!loading && (
           <>
+            <section className="weekly-plan-insights" aria-label="주간 가격 점수 및 시설 정보">
+              <div className="weekly-price-summary">
+                <div className="weekly-price-score">
+                  <span className="weekly-insight-label">주간 가격 점수</span>
+                  <strong>
+                    {weeklyPriceLoading ? '계산 중' : weeklyPriceSummary?.score == null ? '-' : `${weeklyPriceSummary.score.toFixed(1)}점`}
+                  </strong>
+                  <span className="weekly-score-caption">
+                    {weeklyPriceSummary?.mealSlotCount
+                      ? `${weeklyPriceSummary.mealSlotCount}개 끼니 · ${mealCount}명 기준`
+                      : '주간 식단 메뉴 원가 기준'}
+                  </span>
+                </div>
+                <div className="weekly-price-metrics">
+                  <div>
+                    <span>주간 예상 비용</span>
+                    <strong>{weeklyPriceSummary ? `${formatNumber(weeklyPriceSummary.actualCost)}원` : '-'}</strong>
+                  </div>
+                  <div>
+                    <span>주간 목표 예산</span>
+                    <strong>{weeklyPriceSummary?.targetBudget == null ? '-' : `${formatNumber(weeklyPriceSummary.targetBudget)}원`}</strong>
+                  </div>
+                  <p>시설의 1인 목표 식재료비 × 식수 × 메뉴가 배정된 끼니 수를 기준으로 산출합니다.</p>
+                </div>
+              </div>
+              {weeklyPriceError && <p className="weekly-price-error" role="status">{weeklyPriceError}</p>}
+
+              <div className="weekly-facility-profile">
+                <button
+                  type="button"
+                  className="weekly-facility-toggle"
+                  aria-expanded={isFacilityInfoOpen}
+                  aria-controls="weekly-facility-details"
+                  onClick={() => setIsFacilityInfoOpen((isOpen) => !isOpen)}
+                >
+                  {isFacilityInfoOpen ? '시설 가입 정보 숨기기' : '시설 가입 정보 보기'}
+                </button>
+                {isFacilityInfoOpen && (
+                  <div id="weekly-facility-details" className="weekly-facility-details">
+                    {facilityInfoError ? (
+                      <p className="weekly-price-error" role="alert">{facilityInfoError}</p>
+                    ) : facility ? (
+                      <>
+                        <div><span>시설명</span><strong>{facility.name || '-'}</strong></div>
+                        <div><span>시설 유형</span><strong>{FACILITY_TYPE_LABELS[facility.facilityType] || facility.facilityType || '-'}</strong></div>
+                        <div><span>주소</span><strong>{facility.address || '-'}</strong></div>
+                        <div><span>담당자</span><strong>{facility.contactName || '-'}</strong></div>
+                        <div><span>기본 식수</span><strong>{facility.defaultMealCount ?? '-'}명</strong></div>
+                        <div><span>조식 식수</span><strong>{facility.breakfastMealCount ?? '-'}명</strong></div>
+                        <div><span>중식 식수</span><strong>{facility.lunchMealCount ?? '-'}명</strong></div>
+                        <div><span>석식 식수</span><strong>{facility.dinnerMealCount ?? '-'}명</strong></div>
+                        <div><span>1인 목표 식재료비</span><strong>{facility.targetFoodCost == null ? '-' : `${formatNumber(facility.targetFoodCost)}원`}</strong></div>
+                      </>
+                    ) : (
+                      <p>시설 정보를 불러오는 중입니다.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
+
             <section className="weekly-meal-board" aria-label="주간 식단 목록">
               <div className="weekly-board-corner">구분</div>
               {dates.map((date) => (

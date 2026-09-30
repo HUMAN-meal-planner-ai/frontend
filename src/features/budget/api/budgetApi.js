@@ -34,6 +34,11 @@ export async function queryHighCostMenuCandidates(payload = {}) {
   return data;
 }
 
+export async function saveMyMonthlyBudget(month) {
+  const { data } = await api.post('/api/facilities/me/monthly-budget', null, { params: { month } });
+  return data;
+}
+
 /**
  * [BUDG-005] 대체 메뉴 적용 전후의 예상 비용 차이와 절감액 종합 분석 (GET)
  * @param {Object} params

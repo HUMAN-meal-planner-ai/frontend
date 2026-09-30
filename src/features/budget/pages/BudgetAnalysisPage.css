@@ -468,6 +468,11 @@
   margin-top: 6px;
 }
 
+.price-score-value { display: flex; align-items: baseline; gap: 6px; color: #176b43; }
+.price-score-value strong { font-size: 30px; font-weight: 800; line-height: 1.1; }
+.price-score-value span { color: #72877b; font-size: 13px; font-weight: 700; }
+.price-score-status { align-self: flex-start; margin-top: 7px; color: #237448; font-size: 12px; font-weight: 800; }
+
 .card-alert {
   border-color: #fca5a5;
   background: linear-gradient(145deg, #ffffff, #fff7f7);
@@ -1020,6 +1025,18 @@
   padding: 3px 8px;
   border-radius: 8px;
 }
+
+.monthly-budget-confirm { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 16px; padding-top: 10px; border-top: 1px solid #e4eee8; }
+.monthly-budget-confirm > div { display: flex; flex-direction: column; gap: 2px; }
+.monthly-budget-confirm > div > span { color: #72877b; font-size: 11px; font-weight: 700; }
+.monthly-budget-confirm > div > strong { color: #176b43; font-size: 17px; font-weight: 800; }
+.monthly-budget-confirm > div > small { color: #8a9b91; font-size: 10px; }
+.monthly-budget-confirm > button { min-height: 38px; padding: 0 14px; border: 1px solid #258252; border-radius: 7px; background: #258252; color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; }
+.monthly-budget-confirm > button:hover:not(:disabled) { background: #1d7045; }
+.monthly-budget-confirm > button:disabled { opacity: .55; cursor: not-allowed; }
+.monthly-budget-feedback { width: 100%; margin: 0; font-size: 11px; font-weight: 700; }
+.monthly-budget-feedback.success { color: #247448; }
+.monthly-budget-feedback.error { color: #aa3d36; }
 
 .weekly-breakdown-grid {
   display: grid;

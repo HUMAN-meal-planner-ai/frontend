@@ -1,5 +1,9 @@
 import api from '../../../api/axios'
 
+export function getMyFacility() {
+  return api.get('/api/facilities/me')
+}
+
 export function getMenus(slot) {
   return api.get('/api/menus', { params: slot ? { slot } : {} })
 }

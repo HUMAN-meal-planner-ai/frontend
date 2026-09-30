@@ -4,7 +4,21 @@ export default function BudgetScheduleTab({
   monthlyPlanCost,
   weeklyPlanCost,
   budgetRisk,
+  monthlyBudgetPreview,
+  savedMonthlyBudget,
+  monthlyBudgetSaving,
+  monthlyBudgetMessage,
+  monthlyBudgetError,
+  onSaveMonthlyBudget,
 }) {
+  const monthlyTotalCost = Number(monthlyPlanCost?.totalMonthlyExpectedCost || 0)
+  const activeMonthlyBudget = savedMonthlyBudget == null
+    ? monthlyBudgetPreview
+    : Number(savedMonthlyBudget)
+  const budgetUsageRate = activeMonthlyBudget > 0
+    ? `${((monthlyTotalCost / activeMonthlyBudget) * 100).toFixed(2)}%`
+    : '-'
+
   return (
     <div className="tab-fade-in">
       {/* 1. 월간 식단 식재료비 요약 카드 (COST-013) */}
@@ -20,8 +34,24 @@ export default function BudgetScheduleTab({
             <div className="monthly-total-highlight">
               총 예상액: <strong>{formatCurrency(monthlyPlanCost.totalMonthlyExpectedCost)}</strong>
               <span className="monthly-budget-rate">
-                (예산 대비 <strong>{monthlyPlanCost.budgetUsageRate}%</strong> 소진)
+                (저장 예산 대비 <strong>{budgetUsageRate}</strong> 소진)
               </span>
+              <div className="monthly-budget-confirm">
+                <div>
+                  <span>산출 예산</span>
+                  <strong>{monthlyBudgetPreview == null ? '-' : formatCurrency(monthlyBudgetPreview)}</strong>
+                  <small>1인 목표 단가 × 해당 월 총 식수</small>
+                </div>
+                <button
+                  type="button"
+                  onClick={onSaveMonthlyBudget}
+                  disabled={monthlyBudgetSaving || !monthlyPlanCost.totalMonthlyMealCount}
+                >
+                  {monthlyBudgetSaving ? '저장 중...' : savedMonthlyBudget == null ? '월 예산 저장' : '월 예산 다시 저장'}
+                </button>
+              </div>
+              {monthlyBudgetMessage && <p className="monthly-budget-feedback success" role="status">{monthlyBudgetMessage}</p>}
+              {monthlyBudgetError && <p className="monthly-budget-feedback error" role="alert">{monthlyBudgetError}</p>}
             </div>
           </div>
 

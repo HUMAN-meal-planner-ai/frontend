@@ -22,6 +22,7 @@ const navigationItems = [
   { label: '식단 관리', to: '/meal-plans' },
   { label: '가격 예측', to: '/prices' },
   { label: '원가·예산', to: '/budget' },
+  { label: '마이페이지', to: '/my-page' },
 ];
 
 export default function BudgetAnalysisPage({ user, onLogout }) {
@@ -54,6 +55,11 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     budgetUsage,
     monthlyPlanCost,
     weeklyPlanCost,
+    monthlyBudgetPreview,
+    savedMonthlyBudget,
+    monthlyBudgetSaving,
+    monthlyBudgetMessage,
+    monthlyBudgetError,
     highCostData, // BUDG-003
 
     replacementCandidates,
@@ -79,6 +85,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
 
     handleApplyFilters,
     handleSelectMenu,
+    handleSaveMonthlyBudget,
     handleTriggerReevaluation,
     handleVerifyWeeklyPlan,
     handleMarkAlertAsRead,
@@ -88,7 +95,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     handleCloseAlertModal,
     handleOpenReplacementModal,
     handleCloseReplacementModal,
-  } = useBudgetAnalysis();
+  } = useBudgetAnalysis(user?.facilityId);
 
   // 실시간 재평가 실행 클릭 시 알림
   const handleReevaluateClick = async () => {
@@ -284,6 +291,12 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                   monthlyPlanCost={monthlyPlanCost}
                   weeklyPlanCost={weeklyPlanCost}
                   budgetRisk={budgetRisk}
+                  monthlyBudgetPreview={monthlyBudgetPreview}
+                  savedMonthlyBudget={savedMonthlyBudget}
+                  monthlyBudgetSaving={monthlyBudgetSaving}
+                  monthlyBudgetMessage={monthlyBudgetMessage}
+                  monthlyBudgetError={monthlyBudgetError}
+                  onSaveMonthlyBudget={handleSaveMonthlyBudget}
                 />
               )}
             </>
