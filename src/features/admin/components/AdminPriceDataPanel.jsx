@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getWeeklyPredictionChart, getWeeklyRiskRankings } from '../../price/api/priceApi'
-import { getAdminPriceDataStatus } from '../api/adminApi'
+import { getAdminPriceDataStatus, getAdminPriceMappings, reviewAdminPriceMapping } from '../api/adminApi'
 
 const toLocalDate = (date) => {
   // 브라우저의 UTC 변환으로 날짜가 하루 달라지는 일을 피하려고 로컬 연·월·일을 직접 조합합니다.
@@ -58,6 +58,9 @@ export default function AdminPriceDataPanel() {
   const [chartLoading, setChartLoading] = useState(true)
   const [error, setError] = useState('')
   const [statusError, setStatusError] = useState('')
+  const [mappings, setMappings] = useState([])
+  const [mappingError, setMappingError] = useState('')
+  const [reviewingId, setReviewingId] = useState(null)
   const [chartError, setChartError] = useState('')
 
   const rankings = rankingResponse?.rankings ?? []
@@ -105,6 +108,7 @@ export default function AdminPriceDataPanel() {
     // 수집 통계와 AI 예측은 서로 다른 API이므로 한쪽이 실패해도 다른 영역은 계속 표시합니다.
     loadDataStatus()
     loadRankings()
+    getAdminPriceMappings().then(setMappings).catch(() => setMappingError('가격 매핑을 불러오지 못했습니다.'))
   }
 
   useEffect(() => {
@@ -118,6 +122,27 @@ export default function AdminPriceDataPanel() {
       .finally(() => { if (!cancelled) setStatusLoading(false) })
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    getAdminPriceMappings()
+      .then((response) => { if (!cancelled) setMappings(response) })
+      .catch(() => { if (!cancelled) setMappingError('가격 매핑을 불러오지 못했습니다.') })
+    return () => { cancelled = true }
+  }, [])
+
+  const reviewMapping = async (mappingId, reviewStatus) => {
+    setReviewingId(mappingId)
+    setMappingError('')
+    try {
+      const updated = await reviewAdminPriceMapping(mappingId, reviewStatus)
+      setMappings((items) => items.map((item) => item.mappingId === mappingId ? updated : item))
+    } catch (requestError) {
+      setMappingError(getErrorMessage(requestError, '가격 매핑 검토에 실패했습니다.'))
+    } finally {
+      setReviewingId(null)
+    }
+  }
 
   useEffect(() => {
     // 수집 통계와 독립적으로 예측 순위를 요청하고 첫 번째 품목을 기본 선택합니다.
@@ -196,6 +221,27 @@ export default function AdminPriceDataPanel() {
             </table>
           </div>
         </>}
+      </section>
+
+      <section className="price-mapping-section" aria-labelledby="price-mapping-title">
+        <div className="price-section-title">
+          <div><span>INGREDIENT MAPPING</span><h3 id="price-mapping-title">식재료 가격 매핑 검토</h3></div>
+          <b>{formatCount(mappings.filter((item) => item.reviewStatus === 'PROPOSED').length)}건 검토 대기</b>
+        </div>
+        {mappingError && <p className="admin-inline-error">{mappingError}</p>}
+        <div className="price-source-table-wrap">
+          <table className="price-source-table price-mapping-table">
+            <thead><tr><th>MealFit 식재료</th><th>KAMIS 기준</th><th>유형</th><th>신뢰도</th><th>상태</th><th>검토</th></tr></thead>
+            <tbody>{mappings.length === 0
+              ? <tr><td colSpan="6" className="empty">등록된 가격 매핑이 없습니다.</td></tr>
+              : mappings.map((mapping) => <tr key={mapping.mappingId}>
+                <td><strong>{mapping.ingredientName}</strong><br /><small>{mapping.ingredientCode}</small></td>
+                <td>{mapping.variety} · {mapping.grade}<br /><small>series {mapping.seriesId}</small></td>
+                <td>{mapping.mappingType}</td><td>{Math.round(Number(mapping.confidenceScore) * 100)}%</td><td>{mapping.reviewStatus}</td>
+                <td className="mapping-actions"><button type="button" disabled={reviewingId === mapping.mappingId} onClick={() => reviewMapping(mapping.mappingId, 'APPROVED')}>승인</button><button type="button" className="reject" disabled={reviewingId === mapping.mappingId} onClick={() => reviewMapping(mapping.mappingId, 'REJECTED')}>거절</button></td>
+              </tr>)}</tbody>
+          </table>
+        </div>
       </section>
 
       <div className="price-section-title prediction-title"><div><span>PREDICTION STATUS</span><h3>주간 가격 예측</h3></div></div>

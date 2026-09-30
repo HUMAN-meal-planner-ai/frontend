@@ -39,6 +39,16 @@ export async function getAdminPriceDataStatus() {
   return data
 }
 
+export async function getAdminPriceMappings() {
+  const { data } = await api.get('/api/admin/price-data/mappings')
+  return data
+}
+
+export async function reviewAdminPriceMapping(mappingId, reviewStatus) {
+  const { data } = await api.patch(`/api/admin/price-data/mappings/${mappingId}/review`, { reviewStatus })
+  return data
+}
+
 /**
  * ADMIN-006 오류 로그 목록을 페이지 단위로 조회합니다.
  * resolved를 전달하지 않으면 전체, false이면 미처리, true이면 처리 완료 로그만 반환됩니다.

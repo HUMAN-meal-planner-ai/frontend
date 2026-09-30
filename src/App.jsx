@@ -23,7 +23,8 @@ function getErrorMessage(error, fallback) {
 function getDefaultRoute(user) {
   if (user?.role === 'ADMIN') return '/admin'
   if (user?.role === 'MANAGER' && user?.facilityId != null) return '/manager'
-  return user?.facilityId == null ? '/setup' : '/home'
+  // 일반 사용자는 시설 설정이 끝나면 별도 홈 화면 대신 서비스 기본 랜딩페이지로 이동합니다.
+  return user?.facilityId == null ? '/setup' : '/'
 }
 
 /** 로그인과 회원가입 화면 왼쪽에 공통으로 표시하는 MealFit 소개 영역입니다. */
@@ -202,12 +203,6 @@ function FacilitySetupPage({ user, onAuthenticated }) {
   return <main className="setup-page"><section className="setup-card"><div className="step-badge">최초 1회 설정</div><h2>운영 시설을 알려주세요</h2><p>입력한 인원과 목표 금액은 원가 및 예산 계산의 기준으로 사용됩니다.</p><form className="setup-form" onSubmit={handleSubmit}><label>시설명<input name="name" value={form.name} onChange={updateField} placeholder="예: 한빛초등학교" maxLength="100" required /></label><label>시설 유형<select name="facilityType" value={form.facilityType} onChange={updateField}><option value="SCHOOL">학교</option><option value="COMPANY">기업</option><option value="HOSPITAL">병원</option><option value="ETC">기타</option></select></label><label>기본 식수 인원<input name="defaultMealCount" type="number" min="0" value={form.defaultMealCount} onChange={updateField} required /></label><label>1인 목표 식재료비<input name="targetFoodCost" type="number" min="0" value={form.targetFoodCost} onChange={updateField} required /></label>{error && <p className="form-message error-message" role="alert">{error}</p>}<button className="primary-button" type="submit" disabled={loading}>{loading ? '저장 중...' : '저장하고 시작'}</button></form></section></main>
 }
 
-/** 인증과 시설 설정 완료를 확인하는 최소 홈입니다. 실제 대시보드 API가 준비되면 카드만 교체할 수 있습니다. */
-function HomePage({ user, onLogout }) {
-  const navigate = useNavigate()
-  return <main className="home-page"><header className="home-header"><strong>MEAL<span>FIT</span></strong><button onClick={onLogout}>로그아웃</button></header><section className="home-content"><p className="eyebrow">OPERATIONS HOME</p><h1>{user?.name}님, 좋은 하루예요.</h1><p>로그인과 시설 연결이 완료되었습니다. 대시보드 데이터가 준비되면 이곳에서 확인할 수 있습니다.</p><div className="home-grid"><article><span>예상 식재료비</span><strong>데이터 준비 중</strong></article><article><span>가격 상승 영향</span><strong>데이터 준비 중</strong></article></div><button className="primary-button home-action" onClick={() => navigate('/meal-plan')}>주간 식단 만들기</button></section></main>
-}
-
 /** 토큰 사용자 정보가 없을 때 보호 화면 주소에 직접 접근하지 못하게 합니다. */
 function ProtectedRoute({ user, children }) {
   return user ? children : <Navigate to="/login" replace />
@@ -216,7 +211,7 @@ function ProtectedRoute({ user, children }) {
 /** 화면 주소를 직접 입력해도 ADMIN 권한이 아닌 사용자는 관리자 페이지에 들어갈 수 없게 합니다. */
 function AdminRoute({ user, children }) {
   if (!user) return <Navigate to="/login" replace />
-  return user.role === 'ADMIN' ? children : <Navigate to="/home" replace />
+  return user.role === 'ADMIN' ? children : <Navigate to="/" replace />
 }
 
 /** 시설 운영 화면은 MANAGER 역할을 가진 계정만 접근할 수 있습니다. */
@@ -245,12 +240,8 @@ function AppRoutes() {
 
       {/* 보호 화면: 사용자 정보가 없으면 ProtectedRoute가 로그인 화면으로 이동시킵니다. */}
       <Route path="/setup" element={<ProtectedRoute user={user}><FacilitySetupPage user={user} onAuthenticated={setUser} /></ProtectedRoute>} />
-      <Route path="/home" element={
-          <ProtectedRoute user={user}>
-            <HomePage user={user} onLogout={logout} />
-          </ProtectedRoute>
-        } 
-      />
+      {/* 이전에 저장된 /home 즐겨찾기도 기본 랜딩페이지로 자연스럽게 이동시킵니다. */}
+      <Route path="/home" element={<Navigate to="/" replace />} />
       <Route path="/menus" element={<ProtectedRoute user={user}><MenuListPage /></ProtectedRoute>} />
       <Route path="/menus/chat" element={<ProtectedRoute user={user}><MenuChatPage /></ProtectedRoute>}/>
       <Route path="/budget" element={<ProtectedRoute user={user}><BudgetAnalysisPage user={user} onLogout={logout} /></ProtectedRoute>} />

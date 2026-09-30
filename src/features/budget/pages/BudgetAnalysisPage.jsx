@@ -104,7 +104,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
       if (res?.warningMessage) {
         alert(`[예산 재평가 완료]\n${res.warningMessage}`);
       }
-    } catch (e) {
+    } catch {
       alert('예산 재평가 중 오류가 발생했습니다.');
     }
   };
@@ -116,7 +116,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
       if (res?.verificationMessage) {
         alert(`[주간 식단 예산 재검증 결과]\n${res.verificationMessage}`);
       }
-    } catch (e) {
+    } catch {
       alert('식단 예산 재검증 중 오류가 발생했습니다.');
     }
   };
