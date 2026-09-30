@@ -95,7 +95,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     handleCloseAlertModal,
     handleOpenReplacementModal,
     handleCloseReplacementModal,
-  } = useBudgetAnalysis(user?.facilityId);
+  } = useBudgetAnalysis(user?.facilityId || user?.facility?.id || 1);
 
   // 실시간 재평가 실행 클릭 시 알림
   const handleReevaluateClick = async () => {
@@ -259,6 +259,8 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                   onSelectMenu={handleSelectMenu}
                   selectedMenuDetail={selectedMenuDetail}
                   detailLoading={detailLoading}
+                  weeklyPlanCost={weeklyPlanCost}
+                  budgetRisk={budgetRisk}
                 />
               )}
 
