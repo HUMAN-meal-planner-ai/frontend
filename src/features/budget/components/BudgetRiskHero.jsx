@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { formatCurrency, formatWon, checkIsRisk } from '../utils/budgetUtils';
 
 export default function BudgetRiskHero({
@@ -10,21 +11,46 @@ export default function BudgetRiskHero({
   onTriggerReevaluation,
   onOpenAlertModal,
 }) {
+  const [simulationPeriod, setSimulationPeriod] = useState('1w'); // '1w' | '2w'
+
   if (!budgetRisk && !budgetUsage) return null;
+
+  // 1주 / 2주 선택에 따른 지표 결정
+  const isOneWeek = simulationPeriod === '1w';
+
+  const currentRiskLevel = isOneWeek
+    ? (budgetRisk?.oneWeekRiskLevel || budgetRisk?.riskLevel || 'SAFE')
+    : (budgetRisk?.twoWeeksRiskLevel || budgetRisk?.riskLevel || 'SAFE');
+
+  const currentWarningMessage = isOneWeek
+    ? (budgetRisk?.oneWeekWarningMessage || budgetRisk?.warningMessage || budgetUsage?.statusMessage)
+    : (budgetRisk?.twoWeeksWarningMessage || budgetRisk?.warningMessage || budgetUsage?.statusMessage);
+
+  const currentExpectedCost = isOneWeek
+    ? (budgetRisk?.oneWeekExpectedCost || budgetRisk?.thisWeekExpectedCost)
+    : (budgetRisk?.twoWeeksTotalExpectedCost);
+
+  const currentProjectedRemaining = isOneWeek
+    ? (budgetRisk?.oneWeekProjectedRemainingBudget ?? budgetRisk?.projectedRemainingBudget)
+    : (budgetRisk?.twoWeeksProjectedRemainingBudget ?? budgetRisk?.projectedRemainingBudget);
+
+  const isCurrentRisk = isOneWeek
+    ? (budgetRisk?.oneWeekIsRisk ?? checkIsRisk(budgetRisk))
+    : (budgetRisk?.twoWeeksIsRisk ?? checkIsRisk(budgetRisk));
 
   return (
     <section className={`budget-risk-card-hero ${riskStatusClass}`}>
       <div className="risk-card-top">
         <div className="risk-badge-group">
           <span className="risk-level-tag">
-            {budgetRisk?.riskLevel === 'WARNING' || budgetUsage?.status === 'EXCEEDED' || budgetUsage?.status === 'WARNING'
+            {currentRiskLevel === 'WARNING' || budgetUsage?.status === 'EXCEEDED' || budgetUsage?.status === 'WARNING'
               ? '🚨 예산 초과 위험 (WARNING)'
-              : budgetRisk?.riskLevel === 'CAUTION' || budgetUsage?.status === 'CAUTION'
+              : currentRiskLevel === 'CAUTION' || budgetUsage?.status === 'CAUTION'
                 ? '⚠️ 예산 주의 (CAUTION)'
                 : '✅ 예산 안정 (SAFE)'}
           </span>
           <span className="risk-facility-info">
-            {budgetRisk?.facilityName || budgetUsage?.facilityName || '시설 1'} · {budgetRisk?.budgetMonth || budgetUsage?.yearMonth || appliedParams.baseDate.slice(0, 7)} 기준
+            {budgetRisk?.facilityName || budgetUsage?.facilityName || '시설 1'} · {budgetRisk?.budgetMonth || budgetUsage?.yearMonth || appliedParams.baseDate?.slice(0, 7)} 기준
           </span>
           {unreadAlertCount > 0 && (
             <button
@@ -39,6 +65,28 @@ export default function BudgetRiskHero({
         </div>
 
         <div className="risk-top-actions">
+          {/* 1주 / 2주 시뮬레이션 기간 전환 탭 */}
+          <div className="simulation-period-toggle" role="tablist" aria-label="시뮬레이션 기간 선택">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={isOneWeek}
+              className={`period-toggle-btn ${isOneWeek ? 'active' : ''}`}
+              onClick={() => setSimulationPeriod('1w')}
+            >
+              1주간 시뮬레이션
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!isOneWeek}
+              className={`period-toggle-btn ${!isOneWeek ? 'active' : ''}`}
+              onClick={() => setSimulationPeriod('2w')}
+            >
+              2주간 시뮬레이션
+            </button>
+          </div>
+
           {budgetUsage && (
             <div className="budget-usage-pill">
               <span>기 집행: </span>
@@ -59,7 +107,7 @@ export default function BudgetRiskHero({
               className="action-pill-btn auto-reeval-btn"
               onClick={onTriggerReevaluation}
               disabled={isReevaluating}
-              title="향후 2주간 식단 비용과 월 잔여 예산을 바탕으로 예산 초과 위험을 실시간 재평가하고 알림을 갱신합니다. (AUTO-002)"
+              title="향후 식단 비용과 잔여 예산을 바탕으로 예산 초과 위험을 실시간 재평가하고 알림을 갱신합니다."
             >
               {isReevaluating ? (
                 <>
@@ -75,15 +123,15 @@ export default function BudgetRiskHero({
 
       {/* 종합 메시지 및 권고 안내 */}
       <p className="risk-message-text">
-        {budgetRisk?.warningMessage || budgetUsage?.statusMessage}
+        {currentWarningMessage}
       </p>
 
-      {/* 월 예산 소진 프로그레스 바 */}
+      {/* 월 예산 소진 프로그레스 바 (월 예산은 그대로 유지) */}
       {budgetUsage && (
         <div className="budget-usage-progress-container">
           <div className="progress-labels-row">
             <span>집행: {formatWon(budgetUsage.actualSpentCost)} ({budgetUsage.currentUsageRate}%)</span>
-            <span>총 예상: {formatWon(budgetUsage.totalExpectedCost)} / {formatWon(budgetUsage.monthlyBudget)}</span>
+            <span>월 예상: {formatWon(budgetUsage.totalExpectedCost)} / {formatWon(budgetUsage.monthlyBudget)}</span>
           </div>
           <div className="budget-progress-track">
             <div
@@ -116,13 +164,13 @@ export default function BudgetRiskHero({
           <strong className="stat-val">{formatCurrency(budgetRisk?.currentSpentCost || budgetUsage?.actualSpentCost)}</strong>
         </div>
         <div className="risk-stat-box">
-          <span className="stat-label">2주간 총 예상 소요액</span>
-          <strong className="stat-val highlight">{formatCurrency(budgetRisk?.twoWeeksTotalExpectedCost)}</strong>
+          <span className="stat-label">{isOneWeek ? '1주간 예상 소요액' : '2주간 총 예상 소요액'}</span>
+          <strong className="stat-val highlight">{formatCurrency(currentExpectedCost)}</strong>
         </div>
         <div className="risk-stat-box">
-          <span className="stat-label">적용 후 잔여 예산</span>
-          <strong className={`stat-val ${checkIsRisk(budgetRisk) || budgetUsage?.isExceeded ? 'val-danger' : 'val-success'}`}>
-            {formatCurrency(budgetRisk?.projectedRemainingBudget || budgetUsage?.remainingBudget)}
+          <span className="stat-label">{isOneWeek ? '1주 소요 후 잔여 예산' : '2주 소요 후 잔여 예산'}</span>
+          <strong className={`stat-val ${isCurrentRisk || budgetUsage?.isExceeded ? 'val-danger' : 'val-success'}`}>
+            {formatCurrency(currentProjectedRemaining)}
           </strong>
         </div>
       </div>

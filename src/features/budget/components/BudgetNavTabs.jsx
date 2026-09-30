@@ -27,7 +27,7 @@ export default function BudgetNavTabs({ activeTab, onTabChange }) {
         className={`nav-tab-item ${activeTab === 'schedule' ? 'active' : ''}`}
         onClick={() => onTabChange('schedule')}
       >
-        📅 2주간 식단 & 월간 시뮬레이션
+        📅 1주/2주 식단 & 월간 시뮬레이션
       </button>
     </nav>
   );
