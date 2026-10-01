@@ -1,5 +1,9 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { clearAuth } from '../../../api/axios';
+import MealFitHeader from '../../../layouts/MealFitHeader';
+import { getWeeklyMealPlan } from '../../mealplan/api/mealPlanApi';
+import { getFutureMenuCost, getMenuCostDetail } from '../api/costApi';
 import { useBudgetAnalysis } from '../hooks/useBudgetAnalysis';
 import { formatWon } from '../utils/budgetUtils';
 
@@ -16,19 +20,31 @@ import MenuReplacementModal from '../components/MenuReplacementModal';
 
 import './BudgetAnalysisPage.css';
 
-// 상단 GNB 네비게이션 아이템
-const navigationItems = [
-  { label: '메뉴 검토', to: '/menus' },
-  { label: '식단 관리', to: '/meal-plans' },
-  { label: '가격 예측', to: '/prices' },
-  { label: '원가·예산', to: '/budget' },
-  { label: '마이페이지', to: '/my-page' },
-];
+function formatLocalDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
+function getCurrentWeekRange() {
+  const today = new Date();
+  const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const daysFromMonday = (monday.getDay() + 6) % 7;
+  monday.setDate(monday.getDate() - daysFromMonday);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return { startDate: formatLocalDate(monday), endDate: formatLocalDate(sunday) };
+}
+
+// 상단 GNB 네비게이션 아이템
 export default function BudgetAnalysisPage({ user, onLogout }) {
   const navigate = useNavigate();
-  const accountPage = user?.role === 'ADMIN' ? '/admin' : user?.role === 'MANAGER' ? '/manager' : '/home';
-  const accountLabel = user?.role === 'ADMIN' ? '관리자 페이지' : user?.role === 'MANAGER' ? '시설 관리' : '내 대시보드';
+  const currentWeekRange = useMemo(() => getCurrentWeekRange(), []);
+  const [currentWeekMenus, setCurrentWeekMenus] = useState(null);
+  const [currentWeekMenuLoading, setCurrentWeekMenuLoading] = useState(true);
+  const [currentWeekMenuError, setCurrentWeekMenuError] = useState('');
+  const [weeklyMenuCostResult, setWeeklyMenuCostResult] = useState({ key: null, rows: [], error: '' });
 
   // 비즈니스 로직 & 데이터 상태 커스텀 훅 (자동화 포함)
   const {
@@ -47,7 +63,6 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     costMode,
     setCostMode,
 
-    menuCosts,
     comparisons,
     drivers,
     menuRisks,
@@ -97,6 +112,104 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     handleCloseReplacementModal,
   } = useBudgetAnalysis(user?.facilityId || user?.facility?.id || 1);
 
+  useEffect(() => {
+    let active = true;
+    getWeeklyMealPlan(currentWeekRange.startDate)
+      .then(({ data }) => {
+        if (!active) return;
+        const menusById = new Map();
+        for (const meal of data?.meals || []) {
+          const items = meal.menuItems?.length
+            ? meal.menuItems
+            : (meal.menuId != null ? [{ menuId: meal.menuId }] : []);
+          items.forEach((item) => {
+            if (item.menuId == null) return;
+            const menuId = String(item.menuId);
+            if (!menusById.has(menuId)) {
+              menusById.set(menuId, { menuId: Number(item.menuId), menuName: item.menuName || meal.menuName || '' });
+            }
+          });
+        }
+        setCurrentWeekMenus([...menusById.values()]);
+      })
+      .catch((requestError) => {
+        if (!active) return;
+        setCurrentWeekMenus([]);
+        setCurrentWeekMenuError(requestError.response?.data?.message || '이번 주 식단을 불러오지 못했습니다.');
+      })
+      .finally(() => {
+        if (active) setCurrentWeekMenuLoading(false);
+      });
+    return () => { active = false; };
+  }, [currentWeekRange.startDate]);
+
+  const weeklyMenuCostRequestKey = JSON.stringify([
+    currentWeekMenus?.map((menu) => menu.menuId) ?? null,
+    costMode,
+    appliedParams.mealCount,
+    appliedParams.targetCost,
+    appliedParams.targetDate,
+  ]);
+
+  useEffect(() => {
+    if (currentWeekMenus == null) return undefined;
+
+    let active = true;
+    const requests = currentWeekMenus.map(({ menuId }) => (
+      costMode === 'CURRENT'
+        ? getMenuCostDetail(menuId, { mealCount: appliedParams.mealCount, targetCost: appliedParams.targetCost })
+        : getFutureMenuCost(menuId, {
+          targetDate: appliedParams.targetDate,
+          mealCount: appliedParams.mealCount,
+          targetCost: appliedParams.targetCost,
+        })
+    ));
+
+    Promise.allSettled(requests).then((results) => {
+      if (!active) return;
+      let failedCount = 0;
+      const rows = results.map((result, index) => {
+        const plannedMenu = currentWeekMenus[index];
+        if (result.status === 'fulfilled') {
+          return {
+            ...result.value,
+            menuId: plannedMenu.menuId,
+            menuName: result.value.menuName || plannedMenu.menuName,
+          };
+        }
+        failedCount += 1;
+        return {
+          menuId: plannedMenu.menuId,
+          menuName: plannedMenu.menuName || `메뉴 #${plannedMenu.menuId}`,
+          costUnavailable: true,
+          targetCost: appliedParams.targetCost,
+          mealCount: appliedParams.mealCount,
+        };
+      });
+      setWeeklyMenuCostResult({
+        key: weeklyMenuCostRequestKey,
+        rows,
+        error: failedCount
+          ? `${failedCount}개 주간 메뉴의 식재료 원가 정보를 불러오지 못했습니다.`
+          : '',
+      });
+    });
+
+    return () => { active = false; };
+  }, [currentWeekMenus, costMode, appliedParams.mealCount, appliedParams.targetCost, appliedParams.targetDate, weeklyMenuCostRequestKey]);
+
+  const currentWeekMenuIdSet = useMemo(
+    () => new Set((currentWeekMenus || []).map((menu) => String(menu.menuId))),
+    [currentWeekMenus],
+  );
+  const currentWeekCostsLoading = weeklyMenuCostResult.key !== weeklyMenuCostRequestKey;
+  const currentWeekMenuCosts = currentWeekCostsLoading ? [] : weeklyMenuCostResult.rows;
+  const currentWeekMenuCostError = currentWeekCostsLoading ? '' : weeklyMenuCostResult.error;
+  const selectedCurrentWeekMenuDetail = selectedMenuDetail
+    && currentWeekMenuIdSet.has(String(selectedMenuDetail.menuId))
+    ? selectedMenuDetail
+    : null;
+
   // 실시간 재평가 실행 클릭 시 알림
   const handleReevaluateClick = async () => {
     try {
@@ -124,33 +237,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
   return (
     <div className="budget-root-layout">
       {/* 1. 메인 공통 GNB 헤더 */}
-      <header className="landing-header">
-        <Link className="landing-logo" to="/" aria-label="MealFit 홈">
-          <span className="logo-leaf" aria-hidden="true">🌱</span>
-          MEAL<span>FIT</span>
-        </Link>
-
-        <nav className="landing-nav" aria-label="주요 화면">
-          {navigationItems.map((item) => (
-            <NavLink key={item.to} to={item.to}>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="landing-auth-actions">
-          {user ? (
-            <>
-              <Link className="header-dashboard-link" to={accountPage}>{accountLabel}</Link>
-              <button className="header-login-button secondary" type="button" onClick={onLogout}>
-                로그아웃
-              </button>
-            </>
-          ) : (
-            <Link className="header-login-button" to="/login">로그인</Link>
-          )}
-        </div>
-      </header>
+      <MealFitHeader />
 
       {/* 2. 본문 컨텐츠 컨테이너 */}
       <main className="budget-main-wrapper">
@@ -168,7 +255,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                 </p>
               </div>
               <div className="budget-meta-pill">
-                <span>분석 대상 <strong>{menuCosts.length}개</strong> 메뉴</span>
+                <span>이번 주 편성 <strong>{currentWeekMenuLoading || currentWeekCostsLoading ? '조회 중' : currentWeekMenuError ? '-' : `${currentWeekMenuCosts.length}개`}</strong> 메뉴</span>
                 <span className="pill-divider" />
                 <span>적용 식수 <strong>{appliedParams.mealCount}명</strong></span>
                 <span className="pill-divider" />
@@ -254,10 +341,14 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                   setCostMode={setCostMode}
                   appliedParams={appliedParams}
                   summary={summary}
-                  menuCosts={menuCosts}
-                  selectedMenuId={selectedMenuId}
+                  menuCosts={currentWeekMenuCosts}
+                  menuListLoading={currentWeekMenuLoading || currentWeekCostsLoading}
+                  menuListError={currentWeekMenuError}
+                  menuListWarning={currentWeekMenuCostError}
+                  weekRange={currentWeekRange}
+                  selectedMenuId={currentWeekMenuIdSet.has(String(selectedMenuId)) ? selectedMenuId : null}
                   onSelectMenu={handleSelectMenu}
-                  selectedMenuDetail={selectedMenuDetail}
+                  selectedMenuDetail={selectedCurrentWeekMenuDetail}
                   detailLoading={detailLoading}
                   weeklyPlanCost={weeklyPlanCost}
                   budgetRisk={budgetRisk}

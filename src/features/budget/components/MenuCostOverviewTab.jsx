@@ -5,8 +5,11 @@ export default function MenuCostOverviewTab({
   costMode,
   setCostMode,
   appliedParams,
-  summary: defaultSummary,
   menuCosts = [],
+  menuListLoading,
+  menuListError,
+  menuListWarning,
+  weekRange,
   selectedMenuId,
   onSelectMenu,
   selectedMenuDetail,
@@ -47,11 +50,13 @@ export default function MenuCostOverviewTab({
 
   // 실제로 화면에 표시할 메뉴 목록
   const displayedMenuCosts = useMemo(() => {
+    const displayedMenuCosts = useMemo(() => {
+    if (!menuCosts) return [];
     if (!showOnlyPlanned) {
       return menuCosts;
     }
     if (plannedMenuNamesList.length === 0) {
-      return [];
+      return meunCosts; // 편성 목록이 없으면 빈 화면 방지를 위해 전체 표시
     }
     const normalizedPlanned = plannedMenuNamesList.map(normalize);
 
@@ -60,29 +65,25 @@ export default function MenuCostOverviewTab({
       return normalizedPlanned.some((p) => p === normName || p.includes(normName) || normName.includes(p));
     });
 
-    return filtered;
+    return filtered.length > 0 ? filtered : menuCosts;
   }, [menuCosts, plannedMenuNamesList, showOnlyPlanned]);
 
   // 표시된 메뉴 기준 파생 요약 통계 계산
   const summary = useMemo(() => {
-    if (!displayedMenuCosts || displayedMenuCosts.length === 0) {
-      return { totalCurrentCost: 0, totalTargetCost: 0, totalExceeded: 0, exceededCount: 0 };
-    }
-    const totalCurrentCost = displayedMenuCosts.reduce((sum, m) => sum + (Number(m.totalMealCost) || 0), 0);
-    const totalTargetCost = displayedMenuCosts.reduce(
-      (sum, m) => sum + (Number(m.targetCost || appliedParams.targetCost) * (m.mealCount || appliedParams.mealCount)),
-      0
-    );
-    const totalExceeded = displayedMenuCosts.reduce(
-      (sum, m) => sum + getExceededAmount(m, appliedParams.targetCost) * (m.mealCount || appliedParams.mealCount),
-      0
-    );
-    const exceededCount = displayedMenuCosts.filter((m) => checkIsExceeded(m, appliedParams.targetCost)).length;
+    return displayedMenuCosts.reduce((totals, menu) => {
+      const mealCount = Number(menu.mealCount ?? appliedParams?.mealCount ?? 1);
+      const targetCost = Number(menu.targetCost ?? appliedParams?.targetCost ?? 0);
+      totals.totalTargetCost += targetCost * mealCount;
+      if (!menu.costUnavailable) {
+        totals.totalCurrentCost += Number(menu.totalMealCost ?? (Number(menu.costPerPerson) * mealCount)) || 0;
+        totals.totalExceeded += getExceededAmount(menu, appliedParams?.targetCost) * mealCount;
+        if (checkIsExceeded(menu, appliedParams?.targetCost)) totals.exceededCount += 1;
+      }
+      return totals;
+    }, { totalCurrentCost: 0, totalTargetCost: 0, totalExceeded: 0, exceededCount: 0 });
+  }, [displayedMenuCosts, appliedParams?.mealCount, appliedParams?.targetCost]);
 
-    return { totalCurrentCost, totalTargetCost, totalExceeded, exceededCount };
-  }, [displayedMenuCosts, appliedParams.targetCost, appliedParams.mealCount]);
-
-  const priceScore = displayedMenuCosts.length
+  const priceScore = displayedMenuCosts.length && displayedMenuCosts.every((menu) => !menu.costUnavailable)
     ? calculatePriceScore(summary.totalCurrentCost, summary.totalTargetCost)
     : null;
 
@@ -181,7 +182,8 @@ export default function MenuCostOverviewTab({
                 : `📋 전체 등록 메뉴 원가 현황 (${menuCosts.length}개 메뉴)`}
             </h3>
             <span className="panel-header-tip">
-              ※ 행을 클릭하면 하단에 해당 메뉴의 세부 식재료 단가 계산식이 표시됩니다.
+              {weekRange ? `${weekRange.startDate} ~ ${weekRange.endDate} · ` : ''}
+              행을 클릭하면 하단에 해당 메뉴의 세부 식재료 단가 계산식이 표시됩니다.
             </span>
           </div>
 
@@ -192,7 +194,7 @@ export default function MenuCostOverviewTab({
               className={`menu-filter-btn ${showOnlyPlanned ? 'active' : ''}`}
               onClick={() => setShowOnlyPlanned(true)}
             >
-              📌 식단 편성 메뉴만 ({plannedMenuNamesList.length}개)
+              📌 식단 편성 메뉴만
             </button>
             <button
               type="button"
@@ -204,6 +206,8 @@ export default function MenuCostOverviewTab({
           </div>
         </div>
 
+        {menuListWarning && <p className="menu-cost-warning" role="status">{menuListWarning}</p>}
+
         <div className="brand-table-wrapper">
           <table className="brand-table">
             <thead>
@@ -211,13 +215,23 @@ export default function MenuCostOverviewTab({
                 <th>메뉴 ID</th>
                 <th>메뉴명</th>
                 <th>1인분 원가</th>
-                <th>총 예상 원가 ({appliedParams.mealCount}명)</th>
+                <th>총 예상 원가 ({appliedParams?.mealCount}명)</th>
                 <th>목표 단가</th>
                 <th>상태</th>
               </tr>
             </thead>
             <tbody>
-              {displayedMenuCosts.length === 0 ? (
+              {menuListLoading ? (
+                <tr>
+                  <td colSpan="6" className="table-empty">
+                    이번 주 식단 메뉴를 불러오는 중입니다.
+                  </td>
+                </tr>
+              ) : menuListError ? (
+                <tr>
+                  <td colSpan="6" className="table-empty">{menuListError}</td>
+                </tr>
+              ) : displayedMenuCosts.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="table-empty">
                     <div style={{ padding: '24px', textAlign: 'center' }}>
@@ -238,8 +252,8 @@ export default function MenuCostOverviewTab({
               ) : (
                 displayedMenuCosts.map((item) => {
                   const isSelected = selectedMenuId === item.menuId;
-                  const isExceeded = checkIsExceeded(item, appliedParams.targetCost);
-                  const excAmt = getExceededAmount(item, appliedParams.targetCost);
+                  const isExceeded = checkIsExceeded(item, appliedParams?.targetCost);
+                  const excAmt = getExceededAmount(item, appliedParams?.targetCost);
                   const isPlanned = plannedMenuNamesList.some(p => normalize(p) === normalize(item.menuName) || normalize(p).includes(normalize(item.menuName)));
                   return (
                     <tr
@@ -254,13 +268,17 @@ export default function MenuCostOverviewTab({
                           {item.menuName}
                         </strong>
                       </td>
-                      <td>{formatWon(item.costPerPerson)}</td>
-                      <td>{formatWon(item.totalMealCost)}</td>
-                      <td>{formatWon(item.targetCost || appliedParams.targetCost)}</td>
+                      <td>{item.costUnavailable ? '-' : formatWon(item.costPerPerson)}</td>
+                      <td>{item.costUnavailable ? '-' : formatWon(item.totalMealCost)}</td>
+                      <td>{formatWon(item.targetCost ?? appliedParams?.targetCost)}</td>
                       <td>
-                        <span className={`status-pill ${isExceeded ? 'pill-danger' : 'pill-success'}`}>
-                          {isExceeded ? `⚠️ 초과 (+${formatWon(excAmt)})` : '✅ 적정'}
-                        </span>
+                        {item.costUnavailable ? (
+                          <span className="status-pill pill-neutral">원가 정보 없음</span>
+                        ) : (
+                          <span className={`status-pill ${isExceeded ? 'pill-danger' : 'pill-success'}`}>
+                            {isExceeded ? `⚠️ 초과 (+${formatWon(excAmt)})` : '✅ 적정'}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -283,9 +301,9 @@ export default function MenuCostOverviewTab({
           {selectedMenuDetail && (
             <div className="formula-sum-badge">
               <span>1인분 합계: <strong>{formatWon(selectedMenuDetail.costPerPerson)}</strong></span>
-              {checkIsExceeded(selectedMenuDetail, appliedParams.targetCost) && (
+              {checkIsExceeded(selectedMenuDetail, appliedParams?.targetCost) && (
                 <span className="exceed-tag">
-                  (+{formatWon(getExceededAmount(selectedMenuDetail, appliedParams.targetCost))} 초과)
+                  (+{formatWon(getExceededAmount(selectedMenuDetail, appliedParams?.targetCost))} 초과)
                 </span>
               )}
             </div>

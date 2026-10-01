@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import MealFitHeader from '../../../layouts/MealFitHeader'
 import { getMenus, getMyFacility, getWeeklyMealPlan, saveMealPlan } from '../api/mealPlanApi'
 import { getMenuCostDetail } from '../../budget/api/costApi'
 import { calculatePriceScore } from '../../budget/utils/budgetUtils'
@@ -20,6 +21,15 @@ const FACILITY_TYPE_LABELS = {
 
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토']
 const MEAL_TYPES = ['BREAKFAST', 'LUNCH', 'DINNER']
+const MENU_SLOT_FILTERS = [
+  { value: 'ALL', label: '전체 메뉴' },
+  { value: 'RICE', label: '밥' },
+  { value: 'SOUP', label: '국' },
+  { value: 'MAIN', label: '메인 반찬' },
+  { value: 'SIDE', label: '서브 반찬' },
+  { value: 'KIMCHI', label: '김치' },
+  { value: 'OTHER', label: '기타' },
+]
 
 function formatLocalDate(date) {
   const year = date.getFullYear()
@@ -114,6 +124,7 @@ function WeeklyMealPlanPage() {
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false)
   const [addMenuTarget, setAddMenuTarget] = useState(null)
   const [menuSearch, setMenuSearch] = useState('')
+  const [menuSlotFilter, setMenuSlotFilter] = useState('ALL')
   const [menuLoadError, setMenuLoadError] = useState('')
 
   const highlightedIngredientMenuIds = useMemo(() => {
@@ -310,6 +321,7 @@ function WeeklyMealPlanPage() {
   const handleOpenAddMenu = (mealDate, mealType) => {
     setAddMenuTarget({ mealDate, mealType })
     setMenuSearch('')
+    setMenuSlotFilter('ALL')
     setIsAddMenuOpen(true)
   }
 
@@ -739,14 +751,17 @@ function WeeklyMealPlanPage() {
     setMessage(`"${menuName}" 메뉴를 삭제했습니다. [식단 저장]을 누르면 DB에 반영됩니다.`)
   };
 
+  const filteredAddMenus = allMenus.filter((menu) => {
+    const query = menuSearch.trim().toLocaleLowerCase()
+    const matchesQuery = !query || [menu.menuName, menu.mainCategory, menu.subCategory, menu.menuCode]
+      .some((value) => String(value || '').toLocaleLowerCase().includes(query))
+    const matchesSlot = menuSlotFilter === 'ALL' || menu.slot === menuSlotFilter
+    return matchesQuery && matchesSlot
+  })
+
   return (
     <main className="weekly-meal-page">
-      <header className="weekly-meal-header">
-        <button type="button" className="text-button" onClick={() => navigate('/meal-plans')}>← 월간 식단</button>
-        <strong>MEAL<span>FIT</span></strong>
-        <span className="weekly-meal-label">WEEKLY MENU</span>
-        <button type="button" className="text-button" onClick={() => navigate('/my-page')}>마이페이지</button>
-      </header>
+      <MealFitHeader />
 
       <section className="weekly-meal-content">
         {/* 상단 헤더 및 주간 선택 컨트롤 */}
@@ -822,6 +837,10 @@ function WeeklyMealPlanPage() {
                   </span>
                 </div>
                 <div className="weekly-price-metrics">
+                  <div>
+                    <span>1인 목표 급식비</span>
+                    <strong>{facility?.targetFoodCost == null ? '-' : `${formatNumber(facility.targetFoodCost)}원`}</strong>
+                  </div>
                   <div>
                     <span>주간 예상 비용</span>
                     <strong>{weeklyPriceSummary ? `${formatNumber(weeklyPriceSummary.actualCost)}원` : '-'}</strong>
@@ -1340,17 +1359,25 @@ function WeeklyMealPlanPage() {
                 />
               </label>
 
+              <div className="add-menu-slot-filters" role="group" aria-label="메뉴 분류 필터">
+                {MENU_SLOT_FILTERS.map((filter) => (
+                  <button
+                    type="button"
+                    key={filter.value}
+                    className={menuSlotFilter === filter.value ? 'add-menu-slot-filter-active' : ''}
+                    aria-pressed={menuSlotFilter === filter.value}
+                    onClick={() => setMenuSlotFilter(filter.value)}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+
               {menuLoadError ? (
                 <p className="add-menu-empty" role="alert">{menuLoadError}</p>
               ) : (
                 <div className="add-menu-list" aria-label="DB 메뉴 목록">
-                  {allMenus
-                    .filter((menu) => {
-                      const query = menuSearch.trim().toLocaleLowerCase()
-                      return !query || [menu.menuName, menu.mainCategory, menu.subCategory, menu.menuCode]
-                        .some((value) => String(value || '').toLocaleLowerCase().includes(query))
-                    })
-                    .map((menu) => (
+                  {filteredAddMenus.map((menu) => (
                       <button
                         type="button"
                         className="add-menu-option"
@@ -1363,13 +1390,9 @@ function WeeklyMealPlanPage() {
                         </span>
                         <span className="add-menu-option-action">추가</span>
                       </button>
-                    ))}
+                  ))}
                   {!allMenus.length && <p className="add-menu-empty">DB에 등록된 메뉴가 없습니다.</p>}
-                  {allMenus.length > 0 && !allMenus.some((menu) => {
-                    const query = menuSearch.trim().toLocaleLowerCase()
-                    return !query || [menu.menuName, menu.mainCategory, menu.subCategory, menu.menuCode]
-                      .some((value) => String(value || '').toLocaleLowerCase().includes(query))
-                  }) && <p className="add-menu-empty">검색 결과가 없습니다.</p>}
+                  {allMenus.length > 0 && filteredAddMenus.length === 0 && <p className="add-menu-empty">검색 결과가 없습니다.</p>}
                 </div>
               )}
             </section>

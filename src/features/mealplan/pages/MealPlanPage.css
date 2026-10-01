@@ -1,14 +1,15 @@
 .meal-plan-page { min-height: 100vh; background: #f5f9f6; }
-.meal-plan-header { display: flex; align-items: center; justify-content: space-between; height: 72px; padding: 0 6vw; border-bottom: 1px solid #dfe8e2; background: #fff; }
-.meal-plan-header strong { color: #173728; font: 700 22px 'DM Sans', sans-serif; }
-.meal-plan-header strong span { color: #2f9b64; }
 .text-button { border: 0; padding: 8px 0; color: #5e7669; background: none; font-weight: 700; }
 .meal-plan-content { max-width: 1100px; margin: auto; padding: 68px 32px; }
 .meal-plan-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; }
 .meal-plan-heading h1 { margin: 0 0 12px; color: #173728; font-size: 42px; letter-spacing: -1.5px; }
 .meal-plan-heading p:not(.eyebrow) { margin: 0; color: var(--muted); }
 .menu-count { padding: 9px 13px; border-radius: 20px; color: #27784e; background: #eaf7ef; font-size: 12px; font-weight: 800; white-space: nowrap; }
-.meal-plan-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 38px; padding: 24px; border: 1px solid #dfe9e2; border-radius: 16px; background: #fff; }
+.meal-plan-heading-summary { display: flex; align-items: stretch; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.meal-plan-monthly-budget { display: grid; gap: 4px; min-width: 165px; padding: 9px 13px; border: 1px solid #d9e6de; border-radius: 8px; background: #fff; }
+.meal-plan-monthly-budget span { color: #72877b; font-size: 10px; font-weight: 700; }
+.meal-plan-monthly-budget strong { color: #217849; font-size: 13px; }
+.meal-plan-controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 38px; padding: 24px; border: 1px solid #dfe9e2; border-radius: 16px; background: #fff; }
 .meal-plan-controls label { display: flex; flex-direction: column; gap: 8px; color: #2c4639; font-size: 12px; font-weight: 800; }
 .meal-plan-controls input { height: 46px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; color: #203e2f; background: #fff; }
 .meal-plan-actions { display: flex; grid-column: 1 / -1; gap: 10px; }
@@ -33,6 +34,7 @@
 @media (max-width: 900px) {
   .meal-plan-content { padding: 40px 22px 80px; }
   .meal-plan-heading { flex-direction: column; align-items: flex-start; }
+  .meal-plan-heading-summary { justify-content: flex-start; }
   .meal-plan-controls { grid-template-columns: 1fr; }
   .meal-plan-calendar { overflow-x: auto; }
   .calendar-header, .month-day-labels, .month-week-row { min-width: 760px; }
@@ -41,6 +43,8 @@
 @media (max-width: 560px) {
   .meal-plan-content { padding: 28px 14px 60px; }
   .meal-plan-heading h1 { font-size: 34px; }
+  .meal-plan-heading-summary { width: 100%; }
+  .meal-plan-monthly-budget { flex: 1; min-width: 145px; }
   .meal-plan-actions { flex-wrap: wrap; }
   .meal-plan-actions button { flex: 1 1 100%; }
 }

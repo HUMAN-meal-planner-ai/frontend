@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import MealFitHeader from '../../../layouts/MealFitHeader'
 import { getWeeklyPredictionChart, getWeeklyRiskRankings } from '../api/priceApi'
 import PriceHistoryChart from '../components/PriceHistoryChart'
 import RiskIngredientRanking from '../components/RiskIngredientRanking'
@@ -106,14 +106,7 @@ export default function PriceForecastPage() {
 
   return (
     <main className="price-page">
-      <header className="price-page-header">
-        <Link to="/" className="price-logo">MEAL<span>FIT</span></Link>
-        <nav aria-label="주요 메뉴">
-          <Link to="/meal-plans">식단 관리</Link>
-          <Link to="/budget">예산 분석</Link>
-          <Link to="/prices" className="active">가격 예측</Link>
-        </nav>
-      </header>
+      <MealFitHeader />
 
       <section className="price-page-content">
         <div className="price-title-row">

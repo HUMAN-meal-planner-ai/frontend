@@ -1,9 +1,4 @@
 .weekly-meal-page { min-height: 100vh; background: #f4f8f5; color: #1e362a; }
-.weekly-meal-header { display: flex; align-items: center; justify-content: space-between; height: 72px; padding: 0 6vw; border-bottom: 1px solid #dfe8e2; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02); }
-.weekly-meal-header strong { color: #173728; font: 700 22px 'DM Sans', sans-serif; }
-.weekly-meal-header strong span { color: #2f9b64; }
-.weekly-meal-label { color: #6f8378; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
-
 .weekly-meal-content { max-width: 1080px; margin: auto; padding: 48px 24px 80px; }
 .weekly-meal-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
 .weekly-meal-heading h1 { margin: 0 0 8px; color: #173728; font-size: 38px; font-weight: 800; letter-spacing: -1.2px; }
@@ -15,7 +10,7 @@
 .weekly-insight-label, .weekly-price-metrics > div span { color: #72877b; font-size: 12px; font-weight: 700; }
 .weekly-price-score > strong { margin-top: 3px; color: #198052; font-size: 30px; font-weight: 800; line-height: 1.2; }
 .weekly-score-caption { margin-top: 4px; color: #8a9b91; font-size: 11px; }
-.weekly-price-metrics { display: grid; flex: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 18px; }
+.weekly-price-metrics { display: grid; flex: 1; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 18px; }
 .weekly-price-metrics > div { display: flex; flex-direction: column; gap: 4px; }
 .weekly-price-metrics > div strong { color: #244535; font-size: 16px; font-weight: 800; }
 .weekly-price-metrics > p { grid-column: 1 / -1; margin: 2px 0 0; color: #8a9b91; font-size: 11px; line-height: 1.5; }
@@ -186,6 +181,10 @@
 .add-menu-search-label { display: flex; flex-direction: column; gap: 7px; margin: 0 0 14px; color: #496355; font-size: 12px; font-weight: 700; }
 .add-menu-search-label input { height: 40px; padding: 0 12px; border: 1px solid #d5e4da; border-radius: 7px; color: #203e2f; font: inherit; outline: none; }
 .add-menu-search-label input:focus { border-color: #2f9b64; box-shadow: 0 0 0 3px rgba(47, 155, 100, .12); }
+.add-menu-slot-filters { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 13px; }
+.add-menu-slot-filters button { min-height: 34px; padding: 0 12px; border: 1px solid #d5e4da; border-radius: 7px; background: #fff; color: #496355; font: inherit; font-size: 11px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.add-menu-slot-filters button:hover { border-color: #7fbd96; color: #24794c; }
+.add-menu-slot-filters button.add-menu-slot-filter-active { border-color: #2f9b64; background: #2f9b64; color: #fff; }
 .add-menu-list { max-height: min(52vh, 420px); overflow-y: auto; border-top: 1px solid #edf4f0; }
 .add-menu-option { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 8px; border: 0; border-bottom: 1px solid #edf4f0; background: #fff; color: #254635; text-align: left; cursor: pointer; }
 .add-menu-option:hover { background: #f3faf6; }
