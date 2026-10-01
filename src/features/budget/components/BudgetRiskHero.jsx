@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { formatCurrency, formatWon, checkIsRisk } from '../utils/budgetUtils';
 
 export default function BudgetRiskHero({
@@ -9,8 +10,23 @@ export default function BudgetRiskHero({
   isReevaluating = false,
   onTriggerReevaluation,
   onOpenAlertModal,
+  executedAmountSaving = false,
+  executedAmountMessage = '',
+  executedAmountError = '',
+  onSaveExecutedAmount,
 }) {
-  if (!budgetRisk && !budgetUsage) return null;
+  const [executedAmountInput, setExecutedAmountInput] = useState('0');
+  const budgetMonth = budgetUsage?.yearMonth
+    || budgetRisk?.budgetMonth
+    || appliedParams.baseDate.slice(0, 7);
+
+  useEffect(() => {
+    if (budgetUsage?.actualSpentCost != null) {
+      setExecutedAmountInput(String(budgetUsage.actualSpentCost));
+    }
+  }, [budgetUsage?.actualSpentCost]);
+
+  if (!budgetRisk && !budgetUsage && !onSaveExecutedAmount) return null;
 
   return (
     <section className={`budget-risk-card-hero ${riskStatusClass}`}>
@@ -24,7 +40,7 @@ export default function BudgetRiskHero({
                 : '✅ 예산 안정 (SAFE)'}
           </span>
           <span className="risk-facility-info">
-            {budgetRisk?.facilityName || budgetUsage?.facilityName || '시설 1'} · {budgetRisk?.budgetMonth || budgetUsage?.yearMonth || appliedParams.baseDate.slice(0, 7)} 기준
+            {budgetRisk?.facilityName || budgetUsage?.facilityName || '내 시설'} · {budgetMonth} 기준
           </span>
           {unreadAlertCount > 0 && (
             <button
@@ -77,6 +93,36 @@ export default function BudgetRiskHero({
       <p className="risk-message-text">
         {budgetRisk?.warningMessage || budgetUsage?.statusMessage}
       </p>
+
+      {onSaveExecutedAmount && (
+        <div className="manual-executed-amount-panel">
+          <div>
+            <strong>기 집행액 수동 입력</strong>
+            <span>{budgetUsage
+              ? '결제·영수증 연동 없이 사용자가 입력한 금액을 예산 분석에 반영합니다.'
+              : '분석 데이터를 불러오지 못했지만, 해당 월의 집행액은 직접 입력할 수 있습니다.'}</span>
+          </div>
+          <div className="manual-executed-amount-form">
+            <label>
+              <span>{budgetMonth} 집행액</span>
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                value={executedAmountInput}
+                onChange={(event) => setExecutedAmountInput(event.target.value)}
+                aria-label="기 집행액"
+              />
+              <em>원</em>
+            </label>
+            <button type="button" onClick={() => onSaveExecutedAmount(executedAmountInput)} disabled={executedAmountSaving}>
+              {executedAmountSaving ? '저장 중...' : '집행액 저장'}
+            </button>
+          </div>
+          {executedAmountMessage && <p className="manual-executed-message success">{executedAmountMessage}</p>}
+          {executedAmountError && <p className="manual-executed-message error" role="alert">{executedAmountError}</p>}
+        </div>
+      )}
 
       {/* 월 예산 소진 프로그레스 바 */}
       {budgetUsage && (

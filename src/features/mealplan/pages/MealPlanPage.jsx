@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getMenus, getWeeklyMealPlan, reconfigureMealPlan, saveMealPlan } from '../api/mealPlanApi'
+import { getMyMonthlyBudgets } from '../../account/api/accountApi'
+import MealFitHeader from '../../../layouts/MealFitHeader'
+import { getMenus, getWeeklyMealPlan, saveMealPlan } from '../api/mealPlanApi'
 import './MealPlanPage.css'
 
 function formatLocalDate(date) {
@@ -45,8 +47,9 @@ const getMonthCalendar = (monthDate) => {
 }
 
 const getMonthLabel = (date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월 식단`
+const getMonthInputValue = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 
-function MealPlanPage({ onLogout }) {
+function MealPlanPage() {
   const navigate = useNavigate()
   const [weekStartDate, setWeekStartDate] = useState(getMonday)
   const [displayMonth, setDisplayMonth] = useState(() => {
@@ -54,10 +57,11 @@ function MealPlanPage({ onLogout }) {
     return new Date(current.getFullYear(), current.getMonth(), 1)
   })
   const [mealCount, setMealCount] = useState(100)
-  const [targetCost, setTargetCost] = useState(2500)
   const [menus, setMenus] = useState([])
   const [plan, setPlan] = useState(null)
   const [plansByWeek, setPlansByWeek] = useState({})
+  const [monthlyBudgets, setMonthlyBudgets] = useState([])
+  const [monthlyBudgetError, setMonthlyBudgetError] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -66,6 +70,18 @@ function MealPlanPage({ onLogout }) {
     getMenus()
       .then(({ data }) => setMenus(Array.isArray(data) ? data : []))
       .catch(() => setError('메뉴를 불러오지 못했습니다. 백엔드가 실행 중인지 확인해 주세요.'))
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    getMyMonthlyBudgets()
+      .then((budgets) => {
+        if (active) setMonthlyBudgets(Array.isArray(budgets) ? budgets : [])
+      })
+      .catch(() => {
+        if (active) setMonthlyBudgetError('월 예산 정보를 불러오지 못했습니다.')
+      })
+    return () => { active = false }
   }, [])
 
   const groupedMeals = useMemo(() => {
@@ -83,6 +99,14 @@ function MealPlanPage({ onLogout }) {
   const monthWeekStarts = useMemo(() => {
     return Array.from({ length: 5 }, (_, weekIndex) => monthDays[weekIndex * 7].date)
   }, [monthDays])
+
+  const selectedMonthBudget = monthlyBudgets.find((budget) => budget.month === getMonthInputValue(displayMonth))
+
+  const selectMonth = (monthDate) => {
+    const selectedMonth = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1)
+    setDisplayMonth(selectedMonth)
+    setWeekStartDate(getMonday(selectedMonth))
+  }
 
   useEffect(() => {
     let active = true
@@ -117,15 +141,8 @@ function MealPlanPage({ onLogout }) {
     }
   }
 
-  const requestData = {
-    weekStartDate,
-    mealCount: Number(mealCount),
-    targetCost: Number(targetCost),
-  }
-
-  const reconfigure = () => runRequest(() => reconfigureMealPlan(requestData), '7일 식단을 재구성했습니다.')
   const save = () => {
-    if (!plan) return setError('먼저 식단을 재구성하거나 불러와 주세요.')
+    if (!plan) return setError('저장할 식단이 없습니다. 주간 식단을 먼저 확인해 주세요.')
     const meals = plan.meals.map(({ mealDate, mealType, slot, menuId }) => ({
       mealDate,
       mealType: mealType || 'LUNCH',
@@ -137,40 +154,50 @@ function MealPlanPage({ onLogout }) {
 
   return (
     <main className="meal-plan-page">
-      <header className="meal-plan-header">
-        <button className="text-button" onClick={() => navigate('/home')}>← 홈</button>
-        <strong>MEAL<span>FIT</span></strong>
-        <button className="text-button" onClick={onLogout}>로그아웃</button>
-      </header>
+      <MealFitHeader />
 
       <section className="meal-plan-content">
         <div className="meal-plan-heading">
           <div>
             <p className="eyebrow">WEEKLY MEAL PLAN</p>
             <h1>이번 달 식단</h1>
-            <p>가격 기준을 정하고, 메뉴를 조합한 뒤 저장하세요.</p>
+            <p>주간 식단을 확인하고 필요한 메뉴를 직접 편성하세요.</p>
           </div>
-          <span className="menu-count">메뉴 {menus.length}개 연결됨</span>
+          <div className="meal-plan-heading-summary">
+            <span className="menu-count">메뉴 {menus.length}개 연결됨</span>
+            <div className="meal-plan-monthly-budget" aria-live="polite">
+              <span>{displayMonth.getFullYear()}년 {displayMonth.getMonth() + 1}월 저장 예산</span>
+              <strong>
+                {monthlyBudgetError
+                  ? '불러오기 실패'
+                  : !selectedMonthBudget
+                    ? '입력 가능 기간 외'
+                    : selectedMonthBudget.budgetAmount == null
+                      ? '저장된 예산 없음'
+                      : `${Number(selectedMonthBudget.budgetAmount).toLocaleString('ko-KR')}원`}
+              </strong>
+            </div>
+          </div>
         </div>
 
         <section className="meal-plan-controls">
           <label>
-            주 시작일
-            <input type="date" value={weekStartDate} onChange={(event) => setWeekStartDate(event.target.value)} />
+            선택 월
+            <input
+              type="month"
+              value={getMonthInputValue(displayMonth)}
+              onChange={(event) => {
+                if (!event.target.value) return
+                const [year, month] = event.target.value.split('-').map(Number)
+                selectMonth(new Date(year, month - 1, 1))
+              }}
+            />
           </label>
           <label>
             식수 인원
             <input type="number" min="1" value={mealCount} onChange={(event) => setMealCount(event.target.value)} />
           </label>
-          <label>
-            1인 목표 원가
-            <input type="number" min="1" value={targetCost} onChange={(event) => setTargetCost(event.target.value)} />
-          </label>
-
           <div className="meal-plan-actions">
-            <button className="primary-button" onClick={reconfigure} disabled={loading}>
-              {loading ? '처리 중...' : '7일 재구성'}
-            </button>
             <button
               className="secondary-button"
               onClick={() => navigate(`/meal-plans/weekly?weekStartDate=${weekStartDate}`)}
@@ -187,9 +214,9 @@ function MealPlanPage({ onLogout }) {
 
         <section className="meal-plan-calendar">
           <div className="calendar-header">
-            <button className="calendar-month-button" onClick={() => setDisplayMonth((date) => new Date(date.getFullYear(), date.getMonth() - 1, 1))}>← {displayMonth.getMonth() === 0 ? 12 : displayMonth.getMonth()}월 식단</button>
+            <button className="calendar-month-button" onClick={() => selectMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1, 1))}>← {displayMonth.getMonth() === 0 ? 12 : displayMonth.getMonth()}월 식단</button>
             <h2>{getMonthLabel(displayMonth)}</h2>
-            <button className="calendar-month-button" onClick={() => setDisplayMonth((date) => new Date(date.getFullYear(), date.getMonth() + 1, 1))}>{displayMonth.getMonth() + 2 > 12 ? 1 : displayMonth.getMonth() + 2}월 식단 →</button>
+            <button className="calendar-month-button" onClick={() => selectMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1))}>{displayMonth.getMonth() + 2 > 12 ? 1 : displayMonth.getMonth() + 2}월 식단 →</button>
           </div>
 
           <div className="month-day-labels">

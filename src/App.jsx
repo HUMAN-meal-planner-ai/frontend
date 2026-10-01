@@ -177,17 +177,19 @@ function SignupPage() {
 /** 신규 사용자가 대시보드 계산 기준이 될 시설 정보를 저장하는 최초 설정 화면입니다. */
 function FacilitySetupPage({ user, onAuthenticated }) {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ name: '', facilityType: 'SCHOOL', address: '', contactName: user?.name || '', defaultMealCount: 100, breakfastMealCount: 0, lunchMealCount: 100, dinnerMealCount: 0, targetFoodCost: 5000 })
+  const [form, setForm] = useState({ name: '', facilityType: 'SCHOOL', address: '', contactName: user?.name || '', defaultMealCount: 100, breakfastMealCount: 0, lunchMealCount: 100, dinnerMealCount: 0, targetFoodCost: 5000, monthlyBudget: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const updateField = ({ target: { name, value, type } }) => setForm((current) => ({ ...current, [name]: type === 'number' ? Number(value) : value }))
+  const updateField = ({ target: { name, value, type } }) => setForm((current) => ({ ...current, [name]: type === 'number' && value !== '' ? Number(value) : value }))
 
   const handleSubmit = async (event) => {
     event.preventDefault()
     setLoading(true)
     setError('')
     try {
-      const { data: facility } = await api.post('/api/facilities', form)
+      const { monthlyBudget, ...facilityFields } = form
+      const facilityRequest = monthlyBudget === '' ? facilityFields : { ...facilityFields, monthlyBudget }
+      const { data: facility } = await api.post('/api/facilities', facilityRequest)
       const nextUser = { ...user, facilityId: facility.facilityId }
       // 시설 생성 직후 로컬 사용자 정보도 갱신해 새로고침 시 경로 분기가 달라지지 않게 합니다.
       saveAuth(localStorage.getItem('mealfit_access_token'), nextUser)
@@ -200,7 +202,7 @@ function FacilitySetupPage({ user, onAuthenticated }) {
     }
   }
 
-  return <main className="setup-page"><section className="setup-card"><div className="step-badge">최초 1회 설정</div><h2>운영 시설을 알려주세요</h2><p>입력한 인원과 목표 금액은 원가 및 예산 계산의 기준으로 사용됩니다.</p><form className="setup-form" onSubmit={handleSubmit}><label>시설명<input name="name" value={form.name} onChange={updateField} placeholder="예: 한빛초등학교" maxLength="100" required /></label><label>시설 유형<select name="facilityType" value={form.facilityType} onChange={updateField}><option value="SCHOOL">학교</option><option value="COMPANY">기업</option><option value="HOSPITAL">병원</option><option value="ETC">기타</option></select></label><label>기본 식수 인원<input name="defaultMealCount" type="number" min="0" value={form.defaultMealCount} onChange={updateField} required /></label><label>1인 목표 식재료비<input name="targetFoodCost" type="number" min="0" value={form.targetFoodCost} onChange={updateField} required /></label>{error && <p className="form-message error-message" role="alert">{error}</p>}<button className="primary-button" type="submit" disabled={loading}>{loading ? '저장 중...' : '저장하고 시작'}</button></form></section></main>
+  return <main className="setup-page"><section className="setup-card"><div className="step-badge">최초 1회 설정</div><h2>운영 시설을 알려주세요</h2><p>입력한 인원과 목표 금액은 원가 및 예산 계산의 기준으로 사용됩니다.</p><form className="setup-form" onSubmit={handleSubmit}><label>시설명<input name="name" value={form.name} onChange={updateField} placeholder="예: 한빛초등학교" maxLength="100" required /></label><label>시설 유형<select name="facilityType" value={form.facilityType} onChange={updateField}><option value="SCHOOL">학교</option><option value="COMPANY">기업</option><option value="HOSPITAL">병원</option><option value="ETC">기타</option></select></label><label>기본 식수 인원<input name="defaultMealCount" type="number" min="0" value={form.defaultMealCount} onChange={updateField} required /></label><label>1인 목표 식재료비<input name="targetFoodCost" type="number" min="0" value={form.targetFoodCost} onChange={updateField} required /></label><label>이번 달 월간 예산 (선택)<input name="monthlyBudget" type="number" min="0" step="0.01" value={form.monthlyBudget} onChange={updateField} placeholder="입력하지 않아도 됩니다" /></label>{error && <p className="form-message error-message" role="alert">{error}</p>}<button className="primary-button" type="submit" disabled={loading}>{loading ? '저장 중...' : '저장하고 시작'}</button></form></section></main>
 }
 
 /** 토큰 사용자 정보가 없을 때 보호 화면 주소에 직접 접근하지 못하게 합니다. */

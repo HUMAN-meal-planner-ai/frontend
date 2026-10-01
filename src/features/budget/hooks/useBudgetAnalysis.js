@@ -24,7 +24,7 @@ import {
   markAllAlertsAsRead,
   verifyWeeklyPlanBudget,
 } from '../api/budgetAutomationApi';
-import { getMyFacility } from '../../account/api/accountApi';
+import { getMyFacility, updateMyExecutedAmount } from '../../account/api/accountApi';
 import {
   getHighCostMenuCandidates,
   getMenuReplacementAnalysis,
@@ -37,6 +37,23 @@ import {
   getExceededAmount,
 } from '../utils/budgetUtils';
 
+function formatLocalDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getCurrentLocalDate() {
+  return formatLocalDate(new Date());
+}
+
+function getDefaultForecastDate() {
+  const date = new Date();
+  date.setDate(date.getDate() + 7);
+  return formatLocalDate(date);
+}
+
 /**
  * [예산 분석 & 자동화 통합 커스텀 훅]
  * COST-001 ~ COST-014, BUDG-002, BUDG-003, BUDG-005, MENU-008, MENU-009, AUTO-002, AUTO-004, AUTO-006 통합 관리
@@ -45,15 +62,15 @@ export function useBudgetAnalysis(facilityId = 1) {
   // 1. 입력 필터 폼 상태
   const [filterMealCount, setFilterMealCount] = useState(100);
   const [filterTargetCost, setFilterTargetCost] = useState(2500);
-  const [filterTargetDate, setFilterTargetDate] = useState('2026-09-20');
-  const [filterBaseDate, setFilterBaseDate] = useState('2026-09-17');
+  const [filterTargetDate, setFilterTargetDate] = useState(getDefaultForecastDate);
+  const [filterBaseDate, setFilterBaseDate] = useState(getCurrentLocalDate);
 
   // 실제 조회에 적용된 기준 파라미터 상태
   const [appliedParams, setAppliedParams] = useState({
     mealCount: 100,
     targetCost: 2500,
-    targetDate: '2026-09-20',
-    baseDate: '2026-09-17',
+    targetDate: getDefaultForecastDate(),
+    baseDate: getCurrentLocalDate(),
   });
 
   // 2. 탭 및 원가 모드 상태
@@ -73,6 +90,9 @@ export function useBudgetAnalysis(facilityId = 1) {
   const [monthlyBudgetSaving, setMonthlyBudgetSaving] = useState(false);
   const [monthlyBudgetMessage, setMonthlyBudgetMessage] = useState('');
   const [monthlyBudgetError, setMonthlyBudgetError] = useState('');
+  const [executedAmountSaving, setExecutedAmountSaving] = useState(false);
+  const [executedAmountMessage, setExecutedAmountMessage] = useState('');
+  const [executedAmountError, setExecutedAmountError] = useState('');
   const [highCostData, setHighCostData] = useState(null); // BUDG-003
 
   // 4. 자동화(Automation) & 모달 상태
@@ -140,7 +160,7 @@ export function useBudgetAnalysis(facilityId = 1) {
     async (count, target, tDate, bDate, facId, mode) => {
       setLoading(true);
       setError(null);
-      const currentYearMonth = bDate ? bDate.slice(0, 7) : '2026-09';
+      const currentYearMonth = (bDate || getCurrentLocalDate()).slice(0, 7);
       const weekStartDate = getMondayOfWeek(bDate);
 
       try {
@@ -338,6 +358,34 @@ export function useBudgetAnalysis(facilityId = 1) {
     }
   };
 
+  const handleSaveExecutedAmount = async (amount) => {
+    const month = appliedParams.baseDate.slice(0, 7);
+    const executedAmount = Number(amount);
+    if (!Number.isFinite(executedAmount) || executedAmount < 0) {
+      setExecutedAmountError('집행액은 0원 이상 숫자로 입력해 주세요.');
+      return;
+    }
+    setExecutedAmountSaving(true);
+    setExecutedAmountError('');
+    setExecutedAmountMessage('');
+    try {
+      await updateMyExecutedAmount(month, executedAmount);
+      setExecutedAmountMessage(`${month} 기 집행액 ${executedAmount.toLocaleString()}원이 저장되었습니다.`);
+      await fetchAllData(
+        appliedParams.mealCount,
+        appliedParams.targetCost,
+        appliedParams.targetDate,
+        appliedParams.baseDate,
+        facilityId,
+        costMode,
+      );
+    } catch (requestError) {
+      setExecutedAmountError(requestError.response?.data?.message || '기 집행액을 저장하지 못했습니다.');
+    } finally {
+      setExecutedAmountSaving(false);
+    }
+  };
+
   // 메뉴 선택 핸들러
   const handleSelectMenu = (menuId) => {
     setSelectedMenuId(menuId);
@@ -510,6 +558,10 @@ export function useBudgetAnalysis(facilityId = 1) {
     monthlyBudgetMessage,
     monthlyBudgetError,
     handleSaveMonthlyBudget,
+    executedAmountSaving,
+    executedAmountMessage,
+    executedAmountError,
+    handleSaveExecutedAmount,
     highCostData, // BUDG-003
 
     // 자동화(Automation) & 모달 데이터

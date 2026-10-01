@@ -4,14 +4,28 @@ export default function MenuCostOverviewTab({
   costMode,
   setCostMode,
   appliedParams,
-  summary,
   menuCosts,
+  menuListLoading,
+  menuListError,
+  menuListWarning,
+  weekRange,
   selectedMenuId,
   onSelectMenu,
   selectedMenuDetail,
   detailLoading,
 }) {
-  const priceScore = menuCosts.length
+  const summary = menuCosts.reduce((totals, menu) => {
+    const mealCount = Number(menu.mealCount ?? appliedParams.mealCount)
+    const targetCost = Number(menu.targetCost ?? appliedParams.targetCost)
+    totals.totalTargetCost += targetCost * mealCount
+    if (!menu.costUnavailable) {
+      totals.totalCurrentCost += Number(menu.totalMealCost ?? (Number(menu.costPerPerson) * mealCount)) || 0
+      totals.totalExceeded += getExceededAmount(menu, appliedParams.targetCost) * mealCount
+      if (checkIsExceeded(menu, appliedParams.targetCost)) totals.exceededCount += 1
+    }
+    return totals
+  }, { totalCurrentCost: 0, totalTargetCost: 0, totalExceeded: 0, exceededCount: 0 })
+  const priceScore = menuCosts.length && menuCosts.every((menu) => !menu.costUnavailable)
     ? calculatePriceScore(summary.totalCurrentCost, summary.totalTargetCost)
     : null;
 
@@ -89,9 +103,13 @@ export default function MenuCostOverviewTab({
       {/* 메뉴 목록 테이블 */}
       <div className="budget-glass-panel">
         <div className="panel-header-bar">
-          <h3>메뉴별 원가 현황 목록</h3>
-          <span className="panel-header-tip">※ 행을 클릭하면 하단에 세부 식재료 단가 계산식이 표시됩니다.</span>
+          <h3>이번 주 메뉴별 원가 현황</h3>
+          <span className="panel-header-tip">
+            {weekRange ? `${weekRange.startDate} ~ ${weekRange.endDate} · ` : ''}
+            행을 클릭하면 메뉴의 모든 식재료 단가를 확인할 수 있습니다.
+          </span>
         </div>
+        {menuListWarning && <p className="menu-cost-warning" role="status">{menuListWarning}</p>}
 
         <div className="brand-table-wrapper">
           <table className="brand-table">
@@ -106,10 +124,20 @@ export default function MenuCostOverviewTab({
               </tr>
             </thead>
             <tbody>
-              {menuCosts.length === 0 ? (
+              {menuListLoading ? (
                 <tr>
                   <td colSpan="6" className="table-empty">
-                    등록된 메뉴 및 원가 데이터가 없습니다.
+                    이번 주 식단 메뉴를 불러오는 중입니다.
+                  </td>
+                </tr>
+              ) : menuListError ? (
+                <tr>
+                  <td colSpan="6" className="table-empty">{menuListError}</td>
+                </tr>
+              ) : menuCosts.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="table-empty">
+                    이번 주에 저장된 메뉴가 없습니다.
                   </td>
                 </tr>
               ) : (
@@ -125,13 +153,17 @@ export default function MenuCostOverviewTab({
                     >
                       <td><span className="id-tag">#{item.menuId}</span></td>
                       <td><strong className="menu-name-text">{item.menuName}</strong></td>
-                      <td>{formatWon(item.costPerPerson)}</td>
-                      <td>{formatWon(item.totalMealCost)}</td>
-                      <td>{formatWon(item.targetCost || appliedParams.targetCost)}</td>
+                      <td>{item.costUnavailable ? '-' : formatWon(item.costPerPerson)}</td>
+                      <td>{item.costUnavailable ? '-' : formatWon(item.totalMealCost)}</td>
+                      <td>{formatWon(item.targetCost ?? appliedParams.targetCost)}</td>
                       <td>
-                        <span className={`status-pill ${isExceeded ? 'pill-danger' : 'pill-success'}`}>
-                          {isExceeded ? `⚠️ 초과 (+${formatWon(excAmt)})` : '✅ 적정'}
-                        </span>
+                        {item.costUnavailable ? (
+                          <span className="status-pill pill-neutral">원가 정보 없음</span>
+                        ) : (
+                          <span className={`status-pill ${isExceeded ? 'pill-danger' : 'pill-success'}`}>
+                            {isExceeded ? `⚠️ 초과 (+${formatWon(excAmt)})` : '✅ 적정'}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );

@@ -265,6 +265,7 @@
 @media (max-width: 520px) {
   .landing-header { padding: 0 20px; }
   .header-dashboard-link { display: none; }
+  .landing-header.mealfit-header .header-dashboard-link { display: inline-flex; white-space: nowrap; }
   .header-login-button { min-width: 76px; padding: 0 13px; }
   .landing-hero { padding: 55px 22px 65px; }
   .hero-copy h1 { font-size: 44px; letter-spacing: -2.5px; }

@@ -55,8 +55,8 @@ const formatDate = (value) => value ? value.replaceAll('-', '.') : '-'
 
 /** 공개 첫 화면입니다. 인증 화면과 분리하고 주요 기능 진입점을 한곳에 모았습니다. */
 export default function LandingPage({ user, onLogout }) {
-  const accountPage = user?.role === 'ADMIN' ? '/admin' : user?.role === 'MANAGER' ? '/manager' : '/'
-  const accountLabel = user?.role === 'ADMIN' ? '관리자 페이지' : user?.role === 'MANAGER' ? '시설 관리' : '내 대시보드'
+  const accountPage = user?.role === 'ADMIN' ? '/admin' : user?.role === 'MANAGER' ? '/manager' : '/my-page'
+  const accountLabel = user?.role === 'ADMIN' ? '관리자 페이지' : user?.role === 'MANAGER' ? '시설 관리' : '마이페이지'
   const [marketData, setMarketData] = useState({ asOfDate: null, comparisonDate: null, items: [] })
   const [marketLoading, setMarketLoading] = useState(true)
   const [marketError, setMarketError] = useState('')
@@ -98,7 +98,7 @@ export default function LandingPage({ user, onLogout }) {
         </nav>
 
         <div className="landing-auth-actions">
-          {/* 로그인 상태에서는 대시보드/로그아웃, 비로그인 상태에서는 로그인 버튼을 표시합니다. */}
+          {/* 로그인 상태에서는 계정 페이지/로그아웃, 비로그인 상태에서는 로그인 버튼을 표시합니다. */}
           {user ? (
             <>
               <Link className="header-dashboard-link" to={accountPage}>{accountLabel}</Link>

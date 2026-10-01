@@ -16,10 +16,6 @@ export function getWeeklyMealPlan(weekStartDate) {
   return api.get('/api/meal-plans/weekly', { params: { weekStartDate } })
 }
 
-export function reconfigureMealPlan(plan) {
-  return api.post('/api/meal-plans/reconfigure', plan)
-}
-
 // 개별 메뉴 삭제 API 호출 함수
 export function deleteMealPlanItem(planId, menuId) {
   return api.delete(`/api/meal-plans/${planId}/items/${menuId}`);
