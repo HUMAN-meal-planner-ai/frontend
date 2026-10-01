@@ -1,10 +1,11 @@
+import React, { useState, useMemo, useEffect } from 'react';
 import { calculatePriceScore, formatCurrency, formatWon, checkIsExceeded, getExceededAmount } from '../utils/budgetUtils';
 
 export default function MenuCostOverviewTab({
   costMode,
   setCostMode,
   appliedParams,
-  menuCosts,
+  menuCosts = [],
   menuListLoading,
   menuListError,
   menuListWarning,
@@ -13,21 +14,88 @@ export default function MenuCostOverviewTab({
   onSelectMenu,
   selectedMenuDetail,
   detailLoading,
+  weeklyPlanCost,
+  budgetRisk,
 }) {
-  const summary = menuCosts.reduce((totals, menu) => {
-    const mealCount = Number(menu.mealCount ?? appliedParams.mealCount)
-    const targetCost = Number(menu.targetCost ?? appliedParams.targetCost)
-    totals.totalTargetCost += targetCost * mealCount
-    if (!menu.costUnavailable) {
-      totals.totalCurrentCost += Number(menu.totalMealCost ?? (Number(menu.costPerPerson) * mealCount)) || 0
-      totals.totalExceeded += getExceededAmount(menu, appliedParams.targetCost) * mealCount
-      if (checkIsExceeded(menu, appliedParams.targetCost)) totals.exceededCount += 1
+  const normalize = (s) => (s || '').replace(/\s+/g, '').toLowerCase();
+
+  // 식단 편성에 포함된 메뉴명 목록 추출
+  const plannedMenuNamesList = useMemo(() => {
+    const list = [];
+    const addNames = (rawStr) => {
+      if (!rawStr) return;
+      rawStr.split(/[,/·\n]/).forEach((part) => {
+        const trimmed = part.trim();
+        if (trimmed && trimmed !== '편성 메뉴 없음' && trimmed !== '편성 식단 없음') {
+          list.push(trimmed);
+        }
+      });
+    };
+
+    weeklyPlanCost?.dailyCosts?.forEach((day) => {
+      day.meals?.forEach((meal) => {
+        addNames(meal.menuNames);
+      });
+    });
+
+    [...(budgetRisk?.thisWeekDetails || []), ...(budgetRisk?.nextWeekDetails || [])].forEach((item) => {
+      addNames(item.menuNames);
+    });
+
+    return Array.from(new Set(list));
+  }, [weeklyPlanCost, budgetRisk]);
+
+  // 필터 상태: 기본적으로 식단 편성 메뉴만 보기
+  const [showOnlyPlanned, setShowOnlyPlanned] = useState(true);
+
+  // 실제로 화면에 표시할 메뉴 목록
+  const displayedMenuCosts = useMemo(() => {
+    const displayedMenuCosts = useMemo(() => {
+    if (!menuCosts) return [];
+    if (!showOnlyPlanned) {
+      return menuCosts;
     }
-    return totals
-  }, { totalCurrentCost: 0, totalTargetCost: 0, totalExceeded: 0, exceededCount: 0 })
-  const priceScore = menuCosts.length && menuCosts.every((menu) => !menu.costUnavailable)
+    if (plannedMenuNamesList.length === 0) {
+      return meunCosts; // 편성 목록이 없으면 빈 화면 방지를 위해 전체 표시
+    }
+    const normalizedPlanned = plannedMenuNamesList.map(normalize);
+
+    const filtered = menuCosts.filter((m) => {
+      const normName = normalize(m.menuName);
+      return normalizedPlanned.some((p) => p === normName || p.includes(normName) || normName.includes(p));
+    });
+
+    return filtered.length > 0 ? filtered : menuCosts;
+  }, [menuCosts, plannedMenuNamesList, showOnlyPlanned]);
+
+  // 표시된 메뉴 기준 파생 요약 통계 계산
+  const summary = useMemo(() => {
+    return displayedMenuCosts.reduce((totals, menu) => {
+      const mealCount = Number(menu.mealCount ?? appliedParams?.mealCount ?? 1);
+      const targetCost = Number(menu.targetCost ?? appliedParams?.targetCost ?? 0);
+      totals.totalTargetCost += targetCost * mealCount;
+      if (!menu.costUnavailable) {
+        totals.totalCurrentCost += Number(menu.totalMealCost ?? (Number(menu.costPerPerson) * mealCount)) || 0;
+        totals.totalExceeded += getExceededAmount(menu, appliedParams?.targetCost) * mealCount;
+        if (checkIsExceeded(menu, appliedParams?.targetCost)) totals.exceededCount += 1;
+      }
+      return totals;
+    }, { totalCurrentCost: 0, totalTargetCost: 0, totalExceeded: 0, exceededCount: 0 });
+  }, [displayedMenuCosts, appliedParams?.mealCount, appliedParams?.targetCost]);
+
+  const priceScore = displayedMenuCosts.length && displayedMenuCosts.every((menu) => !menu.costUnavailable)
     ? calculatePriceScore(summary.totalCurrentCost, summary.totalTargetCost)
     : null;
+
+  // 첫 번째 메뉴 자동 선택
+  useEffect(() => {
+    if (displayedMenuCosts.length > 0) {
+      const isStillInList = displayedMenuCosts.some((m) => m.menuId === selectedMenuId);
+      if (!isStillInList) {
+        onSelectMenu(displayedMenuCosts[0].menuId);
+      }
+    }
+  }, [displayedMenuCosts, selectedMenuId, onSelectMenu]);
 
   return (
     <div className="tab-fade-in">
@@ -61,7 +129,11 @@ export default function MenuCostOverviewTab({
         <div className="budget-stat-card">
           <span className="card-kicker">{costMode === 'CURRENT' ? '현재가' : '예측가'} 총비용</span>
           <strong className="card-number">{formatCurrency(summary.totalCurrentCost)}</strong>
-          <span className="card-sub-info">회당 {appliedParams.mealCount}명 전체 메뉴 합산</span>
+          <span className="card-sub-info">
+            {showOnlyPlanned
+              ? `편성 메뉴 ${displayedMenuCosts.length}종 (회당 ${appliedParams.mealCount}명)`
+              : `전체 메뉴 ${displayedMenuCosts.length}종 합산`}
+          </span>
         </div>
 
         <div className="budget-stat-card">
@@ -81,7 +153,7 @@ export default function MenuCostOverviewTab({
             {summary.totalExceeded > 0 ? `+${formatCurrency(summary.totalExceeded)}` : '0원 (안정 운영)'}
           </strong>
           <span className="card-sub-info">
-            {summary.totalExceeded > 0 ? '원가 절감 및 대체 품목 검토 권장' : '모든 메뉴가 목표 단가 내에 편성됨'}
+            {summary.totalExceeded > 0 ? '원가 절감 및 대체 품목 검토 권장' : '편성된 모든 메뉴가 목표 단가 내에 안정됨'}
           </span>
         </div>
 
@@ -95,20 +167,45 @@ export default function MenuCostOverviewTab({
             {priceScore == null ? '원가 데이터 없음' : priceScore === 100 ? '목표 예산 이내' : priceScore === 0 ? '점수 하한' : '목표 예산 초과'}
           </span>
           <span className="card-sub-info">
-            {costMode === 'CURRENT' ? '현재 원가' : '미래 예측 원가'} 합계 기준 · 예산 이하 100점, 초과율 1%당 1점 감점
+            편성 메뉴 원가 합계 기준 · 예산 이하 100점
           </span>
         </div>
       </div>
 
       {/* 메뉴 목록 테이블 */}
       <div className="budget-glass-panel">
-        <div className="panel-header-bar">
-          <h3>이번 주 메뉴별 원가 현황</h3>
-          <span className="panel-header-tip">
-            {weekRange ? `${weekRange.startDate} ~ ${weekRange.endDate} · ` : ''}
-            행을 클릭하면 메뉴의 모든 식재료 단가를 확인할 수 있습니다.
-          </span>
+        <div className="panel-header-bar flex-between-header">
+          <div>
+            <h3>
+              {showOnlyPlanned
+                ? `📋 식단 편성 메뉴 원가 현황 (${displayedMenuCosts.length}개 메뉴)`
+                : `📋 전체 등록 메뉴 원가 현황 (${menuCosts.length}개 메뉴)`}
+            </h3>
+            <span className="panel-header-tip">
+              {weekRange ? `${weekRange.startDate} ~ ${weekRange.endDate} · ` : ''}
+              행을 클릭하면 하단에 해당 메뉴의 세부 식재료 단가 계산식이 표시됩니다.
+            </span>
+          </div>
+
+          {/* 식단 편성 메뉴 / 전체 메뉴 필터 토글 */}
+          <div className="menu-filter-toggle-group">
+            <button
+              type="button"
+              className={`menu-filter-btn ${showOnlyPlanned ? 'active' : ''}`}
+              onClick={() => setShowOnlyPlanned(true)}
+            >
+              📌 식단 편성 메뉴만
+            </button>
+            <button
+              type="button"
+              className={`menu-filter-btn ${!showOnlyPlanned ? 'active' : ''}`}
+              onClick={() => setShowOnlyPlanned(false)}
+            >
+              전체 메뉴 보기 ({menuCosts.length}개)
+            </button>
+          </div>
         </div>
+
         {menuListWarning && <p className="menu-cost-warning" role="status">{menuListWarning}</p>}
 
         <div className="brand-table-wrapper">
@@ -118,7 +215,7 @@ export default function MenuCostOverviewTab({
                 <th>메뉴 ID</th>
                 <th>메뉴명</th>
                 <th>1인분 원가</th>
-                <th>총 예상 원가 ({appliedParams.mealCount}명)</th>
+                <th>총 예상 원가 ({appliedParams?.mealCount}명)</th>
                 <th>목표 단가</th>
                 <th>상태</th>
               </tr>
@@ -134,17 +231,30 @@ export default function MenuCostOverviewTab({
                 <tr>
                   <td colSpan="6" className="table-empty">{menuListError}</td>
                 </tr>
-              ) : menuCosts.length === 0 ? (
+              ) : displayedMenuCosts.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="table-empty">
-                    이번 주에 저장된 메뉴가 없습니다.
+                    <div style={{ padding: '24px', textAlign: 'center' }}>
+                      <p style={{ fontSize: '14px', color: '#63786c', marginBottom: '12px' }}>
+                        현재 선택된 주차에 편성된 식단 메뉴가 없습니다.
+                      </p>
+                      <button
+                        type="button"
+                        className="btn-budget-save-primary"
+                        style={{ padding: '6px 14px', fontSize: '12px' }}
+                        onClick={() => setShowOnlyPlanned(false)}
+                      >
+                        전체 등록 메뉴 보기 ({menuCosts.length}개)
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ) : (
-                menuCosts.map((item) => {
+                displayedMenuCosts.map((item) => {
                   const isSelected = selectedMenuId === item.menuId;
-                  const isExceeded = checkIsExceeded(item, appliedParams.targetCost);
-                  const excAmt = getExceededAmount(item, appliedParams.targetCost);
+                  const isExceeded = checkIsExceeded(item, appliedParams?.targetCost);
+                  const excAmt = getExceededAmount(item, appliedParams?.targetCost);
+                  const isPlanned = plannedMenuNamesList.some(p => normalize(p) === normalize(item.menuName) || normalize(p).includes(normalize(item.menuName)));
                   return (
                     <tr
                       key={item.menuId}
@@ -152,10 +262,15 @@ export default function MenuCostOverviewTab({
                       onClick={() => onSelectMenu(item.menuId)}
                     >
                       <td><span className="id-tag">#{item.menuId}</span></td>
-                      <td><strong className="menu-name-text">{item.menuName}</strong></td>
+                      <td>
+                        <strong className="menu-name-text">
+                          {isPlanned && <span className="planned-badge-inline" title="주간 식단 편성 메뉴">편성</span>}
+                          {item.menuName}
+                        </strong>
+                      </td>
                       <td>{item.costUnavailable ? '-' : formatWon(item.costPerPerson)}</td>
                       <td>{item.costUnavailable ? '-' : formatWon(item.totalMealCost)}</td>
-                      <td>{formatWon(item.targetCost ?? appliedParams.targetCost)}</td>
+                      <td>{formatWon(item.targetCost ?? appliedParams?.targetCost)}</td>
                       <td>
                         {item.costUnavailable ? (
                           <span className="status-pill pill-neutral">원가 정보 없음</span>
@@ -186,9 +301,9 @@ export default function MenuCostOverviewTab({
           {selectedMenuDetail && (
             <div className="formula-sum-badge">
               <span>1인분 합계: <strong>{formatWon(selectedMenuDetail.costPerPerson)}</strong></span>
-              {checkIsExceeded(selectedMenuDetail, appliedParams.targetCost) && (
+              {checkIsExceeded(selectedMenuDetail, appliedParams?.targetCost) && (
                 <span className="exceed-tag">
-                  (+{formatWon(getExceededAmount(selectedMenuDetail, appliedParams.targetCost))} 초과)
+                  (+{formatWon(getExceededAmount(selectedMenuDetail, appliedParams?.targetCost))} 초과)
                 </span>
               )}
             </div>

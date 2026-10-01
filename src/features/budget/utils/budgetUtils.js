@@ -57,13 +57,17 @@ export const checkIsRisk = (risk) => {
  * 주어진 일자가 속한 주의 월요일(YYYY-MM-DD)을 반환하는 헬퍼 함수
  */
 export const getMondayOfWeek = (dateStr) => {
-  if (!dateStr) return '2026-09-14';
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
+  const pad = (n) => String(n).padStart(2, '0');
+  let date;
+  if (!dateStr) {
+    date = new Date();
+  } else {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    date = new Date(y, m - 1, d);
+  }
   const day = date.getDay(); // 0: 일요일, 1: 월요일, ...
   const diff = date.getDate() - day + (day === 0 ? -6 : 1);
   const monday = new Date(date.setDate(diff));
-  const pad = (n) => String(n).padStart(2, '0');
   return `${monday.getFullYear()}-${pad(monday.getMonth() + 1)}-${pad(monday.getDate())}`;
 };
 
@@ -98,4 +102,22 @@ export const formatCurrency = (val) => {
 export const formatWon = (val) => {
   if (val === undefined || val === null) return '0원';
   return `${Math.round(Number(val)).toLocaleString()}원`;
+};
+
+/**
+ * 예산 위험도 단계 라벨
+ */
+export const getRiskLabel = (level) => {
+  if (level === 'WARNING') return '경고 (WARNING)';
+  if (level === 'CAUTION') return '주의 (CAUTION)';
+  return '안정 (SAFE)';
+};
+
+/**
+ * 예산 위험도 뱃지 CSS 클래스
+ */
+export const getRiskBadgeClass = (level) => {
+  if (level === 'WARNING') return 'badge-risk-warning';
+  if (level === 'CAUTION') return 'badge-risk-caution';
+  return 'badge-risk-safe';
 };

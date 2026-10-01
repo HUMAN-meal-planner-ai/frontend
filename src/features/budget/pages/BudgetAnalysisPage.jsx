@@ -110,7 +110,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     handleCloseAlertModal,
     handleOpenReplacementModal,
     handleCloseReplacementModal,
-  } = useBudgetAnalysis(user?.facilityId);
+  } = useBudgetAnalysis(user?.facilityId || user?.facility?.id || 1);
 
   useEffect(() => {
     let active = true;
@@ -350,6 +350,8 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                   onSelectMenu={handleSelectMenu}
                   selectedMenuDetail={selectedCurrentWeekMenuDetail}
                   detailLoading={detailLoading}
+                  weeklyPlanCost={weeklyPlanCost}
+                  budgetRisk={budgetRisk}
                 />
               )}
 

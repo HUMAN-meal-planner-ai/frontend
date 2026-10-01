@@ -547,7 +547,7 @@
   box-shadow: 0 16px 45px rgba(44, 92, 62, 0.07);
   backdrop-filter: blur(18px);
   margin-bottom: 24px;
-  overflow: hidden;
+  padding: 24px 28px;
 }
 
 .panel-header-bar {
@@ -2209,3 +2209,612 @@
   margin-top: 14px;
 }
 
+
+/* 1주 / 2주 시뮬레이션 기간 전환 탭 스타일 */
+.simulation-period-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(220, 235, 225, 0.7);
+  padding: 3px;
+  border-radius: 20px;
+  border: 1px solid rgba(160, 205, 175, 0.6);
+  gap: 2px;
+}
+
+.period-toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #3b604b;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.period-toggle-btn:hover {
+  color: #173f2d;
+}
+
+.period-toggle-btn.active {
+  background: #2b7a4b;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(43, 122, 75, 0.3);
+}
+
+.schedule-view-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.schedule-view-controls .section-title-wrap h3 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #173f2d;
+}
+
+.monthly-cost-panel {
+  padding: 24px 28px !important;
+}
+
+.weekly-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.weekly-cost-item {
+  background: #fbfdfb;
+  border: 1px solid #e1ece4;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.weekly-cost-item .wk-num {
+  font-size: 13px;
+  font-weight: 800;
+  color: #173f2d;
+}
+
+.weekly-cost-item .wk-range {
+  font-size: 11px;
+  color: #72877b;
+}
+
+.weekly-cost-item .wk-cost {
+  font-size: 18px;
+  font-weight: 800;
+  color: #20784a;
+  margin-top: 4px;
+}
+
+.weekly-cost-item .wk-meal-count {
+  font-size: 11px;
+  color: #556b5d;
+}
+
+
+/* =========================================================
+   Week Summary & KPI Cards (1주 / 2주 시뮬레이션 상세 분석)
+   ========================================================= */
+.week-summary-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(244, 249, 246, 0.95) 100%);
+  border: 1px solid rgba(193, 222, 203, 0.9);
+}
+
+.week-summary-panel.two-week-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(246, 248, 253, 0.95) 100%);
+  border: 1px solid rgba(200, 218, 240, 0.9);
+}
+
+.panel-title-with-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.panel-title-with-badge h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #173f2d;
+}
+
+.week-budget-kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 18px;
+}
+
+@media (max-width: 900px) {
+  .week-budget-kpis-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .week-budget-kpis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.week-kpi-card {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(215, 232, 222, 0.8);
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(27, 77, 49, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.week-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(27, 77, 49, 0.08);
+}
+
+.week-kpi-card.highlight-card {
+  background: linear-gradient(145deg, #f0f8f3 0%, #e2f2e7 100%);
+  border-color: rgba(64, 145, 96, 0.4);
+}
+
+.two-week-panel .week-kpi-card.highlight-card {
+  background: linear-gradient(145deg, #eef4fc 0%, #e1ecf9 100%);
+  border-color: rgba(84, 136, 204, 0.4);
+}
+
+.kpi-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #63786c;
+}
+
+.kpi-value {
+  font-size: 20px;
+  font-weight: 900;
+  color: #173f2d;
+  letter-spacing: -0.3px;
+}
+
+.kpi-value.text-primary {
+  color: #1b6d41;
+}
+
+.kpi-value.text-red {
+  color: #c93535;
+}
+
+.kpi-value.text-green {
+  color: #1b6d41;
+}
+
+.kpi-sub {
+  font-size: 11px;
+  color: #8fa096;
+  font-weight: 600;
+}
+
+/* 2주차(예측) 일자별 카드 디자인 */
+.next-week-grid .next-day-card {
+  border-color: rgba(195, 218, 238, 0.85);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 254, 0.95) 100%);
+}
+
+.next-week-grid .next-day-card .day-cost-head {
+  border-bottom: 1px solid #e2edfa;
+}
+
+.next-week-grid .next-day-card .day-name {
+  color: #2b5687;
+  background: #eef5fd;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+
+/* =========================================================
+   상세 식단 편성표 & 메뉴 칩 스타일 (예산 내역 바로 아래 배치)
+   ========================================================= */
+.meal-chip-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.meal-chip-menus {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #173f2d;
+  margin: 3px 0 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.next-week-grid .meal-chip-menus {
+  color: #1d4b7a;
+  background: rgba(235, 243, 253, 0.8);
+}
+
+.meal-chip-sub {
+  font-size: 10px;
+  color: #72877b;
+  display: block;
+}
+
+.meal-details-table-panel {
+  margin-top: 24px;
+}
+
+.detailed-meal-plans-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.week-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.week-section-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #173f2d;
+  margin: 8px 0 4px 0;
+  padding-left: 4px;
+}
+
+.week-section-title.next-section-title {
+  color: #2b5687;
+  margin-top: 16px;
+}
+
+.day-meal-group-card {
+  border: 1px solid #dce9df;
+  border-radius: 14px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(35, 84, 54, 0.04);
+}
+
+.day-meal-group-card.next-group-card {
+  border-color: #d6e4f5;
+  background: #fdfefe;
+}
+
+.day-group-header {
+  background: #f0f7f3;
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e1ece4;
+}
+
+.day-group-header.next-group-header {
+  background: #edf4fd;
+  border-bottom: 1px solid #dbe7f7;
+}
+
+.day-group-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #173f2d;
+}
+
+.day-group-header.next-group-header .day-group-title {
+  color: #1d4b7a;
+}
+
+.day-group-total {
+  font-size: 12px;
+  color: #63786c;
+}
+
+.day-group-total strong {
+  color: #1b6d41;
+}
+
+.day-group-header.next-group-header .day-group-total strong {
+  color: #2b5687;
+}
+
+.day-group-items {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meal-row-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #fbfdfb;
+  border: 1px solid #eaf2ec;
+  border-radius: 10px;
+  gap: 12px;
+}
+
+.meal-row-card.next-row-card {
+  background: #f9fbff;
+  border-color: #e5edf8;
+}
+
+.meal-row-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.meal-row-badge {
+  background: #e5f4ea;
+  color: #1b6d41;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.meal-row-badge.next-badge {
+  background: #e5effd;
+  color: #2b5687;
+}
+
+.meal-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meal-row-menus {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1a3c2c;
+}
+
+.meal-row-meta {
+  font-size: 11px;
+  color: #72877b;
+}
+
+.meal-row-right {
+  display: flex;
+  align-items: center;
+}
+
+.meal-row-cost {
+  font-size: 14px;
+  font-weight: 900;
+  color: #1b6d41;
+}
+
+.meal-row-card.next-row-card .meal-row-cost {
+  color: #2b5687;
+}
+
+
+/* =========================================================
+   월 예산 확정 액션 그룹 & 프리미엄 버튼 스타일
+   ========================================================= */
+.budget-save-action-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.monthly-budget-display-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background: linear-gradient(135deg, rgba(240, 248, 243, 0.9) 0%, rgba(230, 244, 235, 0.95) 100%);
+  border: 1px solid rgba(80, 168, 114, 0.35);
+  border-radius: 12px;
+  padding: 6px 14px;
+  box-shadow: 0 2px 8px rgba(27, 77, 49, 0.05);
+}
+
+.budget-badge-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #63786c;
+  letter-spacing: -0.2px;
+}
+
+.budget-badge-value {
+  font-size: 15px;
+  font-weight: 900;
+  color: #173f2d;
+  letter-spacing: -0.3px;
+}
+
+.btn-budget-save-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1b6d41 0%, #155734 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(27, 109, 65, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.btn-budget-save-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #228450 0%, #18663d 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(27, 109, 65, 0.35);
+}
+
+.btn-budget-save-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(27, 109, 65, 0.2);
+}
+
+.btn-budget-save-primary:disabled {
+  background: #c3d4ca;
+  color: #72877b;
+  cursor: not-allowed;
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.monthly-budget-feedback {
+  margin-top: 10px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.monthly-budget-feedback.success {
+  background: #edf7f0;
+  color: #173f2d;
+  border: 1px solid #cce8d5;
+}
+
+.monthly-budget-feedback.error {
+  background: #fdf2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* =========================================================
+   일자별 카드 끼니 칩 내부 레이아웃 정밀 개선
+   ========================================================= */
+.day-cost-card .day-meal-chip {
+  padding: 6px 10px;
+  gap: 3px;
+}
+
+.day-cost-card .meal-chip-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.day-cost-card .meal-slot-tag {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.day-cost-card .meal-chip-cost {
+  font-size: 12px;
+  font-weight: 900;
+  color: #173f2d;
+}
+
+.day-cost-card .meal-chip-menus {
+  font-size: 11px;
+  font-weight: 700;
+  color: #173f2d;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 2px 6px;
+  border-radius: 5px;
+  border: 1px solid rgba(200, 220, 208, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.day-cost-card .meal-chip-sub {
+  font-size: 9.5px;
+  color: #72877b;
+  font-weight: 600;
+  margin-top: 1px;
+}
+
+
+/* =========================================================
+   메뉴별 원가현황 - 식단 편성 메뉴 필터 버튼 & 뱃지 스타일
+   ========================================================= */
+.flex-between-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.menu-filter-toggle-group {
+  display: inline-flex;
+  background: rgba(220, 237, 226, 0.6);
+  border: 1px solid rgba(162, 204, 178, 0.7);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.menu-filter-btn {
+  border: none;
+  background: transparent;
+  color: #3b5a48;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.menu-filter-btn:hover {
+  color: #173f2d;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.menu-filter-btn.active {
+  background: #ffffff;
+  color: #1b6d41;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(27, 77, 49, 0.1);
+}
+
+.planned-badge-inline {
+  display: inline-block;
+  background: #e8f5ec;
+  color: #1b6d41;
+  border: 1px solid #b7dfc4;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-right: 6px;
+  vertical-align: middle;
+}

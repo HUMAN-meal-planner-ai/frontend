@@ -60,17 +60,29 @@ function getDefaultForecastDate() {
  */
 export function useBudgetAnalysis(facilityId = 1) {
   // 1. 입력 필터 폼 상태
+  const getTodayStr = () => {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  };
+  const getFutureStr = (days = 3) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+
   const [filterMealCount, setFilterMealCount] = useState(100);
   const [filterTargetCost, setFilterTargetCost] = useState(2500);
-  const [filterTargetDate, setFilterTargetDate] = useState(getDefaultForecastDate);
-  const [filterBaseDate, setFilterBaseDate] = useState(getCurrentLocalDate);
+  const [filterTargetDate, setFilterTargetDate] = useState(getFutureStr(3));
+  const [filterBaseDate, setFilterBaseDate] = useState(getTodayStr());
 
   // 실제 조회에 적용된 기준 파라미터 상태
   const [appliedParams, setAppliedParams] = useState({
     mealCount: 100,
     targetCost: 2500,
-    targetDate: getDefaultForecastDate(),
-    baseDate: getCurrentLocalDate(),
+    targetDate: getFutureStr(3),
+    baseDate: getTodayStr(),
   });
 
   // 2. 탭 및 원가 모드 상태
