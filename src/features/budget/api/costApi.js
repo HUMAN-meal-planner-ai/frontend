@@ -255,3 +255,66 @@ export async function getAllMenuRisks(params = {}) {
   return data;
 }
 
+/**
+ * 15. [AI ML 모델] 단일 메뉴 가격 위험도 머신러닝 예측 (LightGBM 3-Class)
+ * @param {Object} features 메뉴 위험도 피처
+ * @returns {Promise<Object>} { menu_id, risk_level, risk_code, risk_score, confidence, probabilities }
+ */
+export async function predictMenuRiskML(features) {
+  const aiBaseUrl = import.meta.env.VITE_AI_API_BASE_URL || 'http://localhost:8000';
+  const response = await fetch(`${aiBaseUrl}/api/v1/cost-risk/menus/predict`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(features),
+  });
+  if (!response.ok) throw new Error('AI 메뉴 위험도 예측 요청 실패');
+  return response.json();
+}
+
+/**
+ * 16. [AI ML 모델] 다중 메뉴 가격 위험도 머신러닝 일괄 예측
+ * @param {Array<Object>} items 메뉴 피처 목록
+ * @returns {Promise<Object>} { predictions: [...] }
+ */
+export async function batchPredictMenuRiskML(items) {
+  const aiBaseUrl = import.meta.env.VITE_AI_API_BASE_URL || 'http://localhost:8000';
+  const response = await fetch(`${aiBaseUrl}/api/v1/cost-risk/menus/batch-predict`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  });
+  if (!response.ok) throw new Error('AI 메뉴 위험도 일괄 예측 요청 실패');
+  return response.json();
+}
+
+/**
+ * 17. [AI ML 모델] 식단표 종합 예산 위험도 머신러닝 예측 (LightGBM 4-Class)
+ * @param {Object} features 식단 종합 위험도 피처
+ * @returns {Promise<Object>} { plan_id, facility_id, risk_level, risk_code, risk_score, confidence, probabilities }
+ */
+export async function predictMealPlanRiskML(features) {
+  const aiBaseUrl = import.meta.env.VITE_AI_API_BASE_URL || 'http://localhost:8000';
+  const response = await fetch(`${aiBaseUrl}/api/v1/cost-risk/meal-plans/predict`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(features),
+  });
+  if (!response.ok) throw new Error('AI 식단 위험도 예측 요청 실패');
+  return response.json();
+}
+
+/**
+ * 18. [AI ML 모델] 식단표 종합 예산 위험도 머신러닝 일괄 예측
+ * @param {Array<Object>} items 식단 피처 목록
+ * @returns {Promise<Object>} { predictions: [...] }
+ */
+export async function batchPredictMealPlanRiskML(items) {
+  const aiBaseUrl = import.meta.env.VITE_AI_API_BASE_URL || 'http://localhost:8000';
+  const response = await fetch(`${aiBaseUrl}/api/v1/cost-risk/meal-plans/batch-predict`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  });
+  if (!response.ok) throw new Error('AI 식단 위험도 일괄 예측 요청 실패');
+  return response.json();
+}
