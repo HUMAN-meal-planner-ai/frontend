@@ -50,13 +50,12 @@ export default function MenuCostOverviewTab({
 
   // 실제로 화면에 표시할 메뉴 목록
   const displayedMenuCosts = useMemo(() => {
-    const displayedMenuCosts = useMemo(() => {
     if (!menuCosts) return [];
     if (!showOnlyPlanned) {
       return menuCosts;
     }
     if (plannedMenuNamesList.length === 0) {
-      return meunCosts; // 편성 목록이 없으면 빈 화면 방지를 위해 전체 표시
+      return menuCosts; // 편성 목록이 없으면 빈 화면 방지를 위해 전체 표시
     }
     const normalizedPlanned = plannedMenuNamesList.map(normalize);
 
