@@ -1,4 +1,4 @@
-﻿import { formatCurrency, formatWon, checkIsCostIncrease } from '../utils/budgetUtils';
+import { formatCurrency, formatWon, checkIsCostIncrease } from '../utils/budgetUtils';
 
 // 메뉴 위험도 태그 렌더링
 const renderRiskBadge = (riskLevel) => {
@@ -47,7 +47,7 @@ export default function CostDriverRiskTab({
           <div className="panel-header-bar">
             <div>
               <div className="panel-kicker-tag high-cost-tag">
-                <span className="sparkle-icon">💰</span> BUDG-003 비용 기여 분석
+                <span className="sparkle-icon">💰</span> 비용 기여 분석
               </div>
               <h3 className="panel-candidate-title">
                 주간 식단 비용 기여 상위 메뉴 Top {highCostCandidates.length}
@@ -83,6 +83,11 @@ export default function CostDriverRiskTab({
                 {highCostCandidates.map((hc, idx) => {
                   const rank = hc.rank || idx + 1;
                   const isSelected = selectedMenuId === hc.menuId;
+                  const contribution = hc.contributionRate ?? hc.costContributionRate ?? 0;
+                  const weeklyCost = hc.weeklyMenuCost ?? hc.weeklyTotalMenuCost ?? 0;
+                  const mealCount = hc.totalMealCount ?? hc.totalServedMealCount ?? 0;
+                  const servedCount = hc.appearanceCount ?? hc.servedCount ?? hc.servedMeals?.length ?? 1;
+
                   return (
                     <tr
                       key={hc.menuId}
@@ -98,15 +103,15 @@ export default function CostDriverRiskTab({
                       </td>
                       <td><span className="rep-slot-tag">{hc.slotName || hc.slot}</span></td>
                       <td>{formatWon(hc.averageCostPerPerson || hc.costPerPerson)}</td>
-                      <td>총 <strong>{hc.servedCount || hc.servedMeals?.length || 1}회</strong> ({hc.totalServedMealCount?.toLocaleString()}명)</td>
-                      <td><strong>{formatCurrency(hc.weeklyTotalMenuCost)}</strong></td>
+                      <td>총 <strong>{servedCount}회</strong> ({mealCount.toLocaleString()}명)</td>
+                      <td><strong>{formatCurrency(weeklyCost)}</strong></td>
                       <td>
                         <div className="driver-bar-wrapper">
                           <div
                             className="driver-bar-fill"
-                            style={{ width: `${Math.min(Number(hc.costContributionRate) || 0, 100)}%` }}
+                            style={{ width: `${Math.min(Number(contribution) || 0, 100)}%` }}
                           />
-                          <span className="text-red fw-bold">{hc.costContributionRate}%</span>
+                          <span className="text-red fw-bold">{contribution}%</span>
                         </div>
                       </td>
                       <td>{renderPriorityBadge(hc.reviewPriority)}</td>
