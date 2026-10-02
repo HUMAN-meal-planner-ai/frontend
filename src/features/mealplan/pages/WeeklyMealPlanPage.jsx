@@ -2,8 +2,9 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import MealFitHeader from '../../../layouts/MealFitHeader'
 import { getMenus, getMyFacility, getWeeklyMealPlan, saveMealPlan } from '../api/mealPlanApi'
-import { getMenuCostDetail } from '../../budget/api/costApi'
+import { getAllMenuCosts, getMenuCostDetail } from '../../budget/api/costApi'
 import { calculatePriceScore } from '../../budget/utils/budgetUtils'
+import { rankMenusForRecommendation } from '../utils/menuRecommendation'
 import './WeeklyMealPlanPage.css'
 
 const MEAL_TYPE_LABELS = {
@@ -121,6 +122,8 @@ function WeeklyMealPlanPage() {
   // 메뉴 추천 모달 상태
   const [isRecommendOpen, setIsRecommendOpen] = useState(false)
   const [recommendedMenus, setRecommendedMenus] = useState([])
+  const [recommendationLoading, setRecommendationLoading] = useState(false)
+  const [recommendationError, setRecommendationError] = useState('')
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false)
   const [addMenuTarget, setAddMenuTarget] = useState(null)
   const [menuSearch, setMenuSearch] = useState('')
@@ -297,7 +300,7 @@ function WeeklyMealPlanPage() {
   }
 
   // 4. 메뉴 추천 기능
-  const handleOpenRecommend = (excludedMenuIds = []) => {
+  const handleOpenRecommend = async (excludedMenuIds = []) => {
     if (!allMenus.length) return
     const currentCategory = selectedMenu?.mainCategory || '부찬'
     const currentId = selectedMenu?.menuId
@@ -309,13 +312,36 @@ function WeeklyMealPlanPage() {
     const unseenOther = candidates.filter((menu) =>
       !excludedIds.has(String(menu.menuId)) && !unseenPreferred.includes(menu))
     const unseenMenus = [...unseenPreferred, ...unseenOther]
-    const shuffled = (menus) => [...menus].sort(() => 0.5 - Math.random())
-    const nextRecommendations = unseenMenus.length
-      ? shuffled(unseenMenus).slice(0, 4)
-      : shuffled(preferredPool).slice(0, 4)
 
-    setRecommendedMenus(nextRecommendations)
     setIsRecommendOpen(true)
+    setRecommendationLoading(true)
+    setRecommendationError('')
+
+    let menuCosts = []
+    const targetCost = Number(facility?.targetFoodCost)
+    if (!Number.isFinite(targetCost) || targetCost <= 0) {
+      setRecommendationError('시설의 1인 목표 식재료비가 없어 예산 점수 없이 추천합니다.')
+    } else {
+      try {
+        menuCosts = await getAllMenuCosts({ mealCount: 1, targetCost })
+        if (!Array.isArray(menuCosts) || !menuCosts.length) {
+          menuCosts = []
+          setRecommendationError('메뉴 원가를 불러오지 못해 중복 점수만으로 추천합니다.')
+        }
+      } catch {
+        setRecommendationError('메뉴 원가 조회에 실패해 중복 점수만으로 추천합니다.')
+      }
+    }
+
+    const rankedCandidates = rankMenusForRecommendation(
+      unseenMenus.length ? unseenMenus : preferredPool,
+      weeklyMenuOccurrences,
+      menuCosts,
+      Number.isFinite(targetCost) && targetCost > 0 && menuCosts.length ? targetCost : null,
+    )
+
+    setRecommendedMenus(rankedCandidates.slice(0, 4))
+    setRecommendationLoading(false)
   }
 
   const handleOpenAddMenu = (mealDate, mealType) => {
@@ -1264,7 +1290,7 @@ function WeeklyMealPlanPage() {
                   <span className="recommend-badge">AI ALTERNATIVE</span>
                   <h3>💡 메뉴 추천</h3>
                   <p className="recommend-desc">
-                    현재 선택된 <strong>{selectedMenu?.menuName}</strong> 대신 사용할 수 있는 추천 메뉴입니다.
+                    <strong>{selectedMenu?.menuName}</strong> 대신 사용할 메뉴입니다. 중복 회피와 예산 적합 점수를 함께 반영합니다.
                   </p>
                 </div>
                 <button
@@ -1281,10 +1307,18 @@ function WeeklyMealPlanPage() {
                   <div className="recommend-item-card" key={rec.menuId || rec.menuCode}>
                     <div className="recommend-item-top">
                       <span className="recommend-cat-badge">{rec.mainCategory || '일반'}</span>
-                      {rec.weight && <span className="recommend-weight-badge">{rec.weight}g</span>}
+                      <div className="recommend-score-meta">
+                        {rec.weight && <span className="recommend-weight-badge">{rec.weight}g</span>}
+                        <span className="recommend-score-badge">종합 {rec.recommendationScore}점</span>
+                      </div>
                     </div>
                     <h4>{rec.menuName}</h4>
                     <p className="recommend-subtext">{rec.subCategory || '균형 잡힌 식단 추천 메뉴'}</p>
+                    <p className="recommend-frequency">
+                      중복 회피 {rec.duplicationAvoidanceScore}점 · 예산 {rec.budgetFitScore == null ? '미적용' : `${rec.budgetFitScore}점`}
+                      {rec.costPerPerson == null ? ' · 원가 미등록' : ` · 1인 ${formatNumber(rec.costPerPerson)}원`}
+                      {' · '}{rec.weeklyOccurrenceCount === 0 ? '이번 주 미편성' : `이번 주 ${rec.weeklyOccurrenceCount}회`}
+                    </p>
                     <button
                       type="button"
                       className="recommend-apply-btn"
@@ -1295,8 +1329,10 @@ function WeeklyMealPlanPage() {
                   </div>
                 ))}
               </div>
+              {recommendationLoading && <p className="recommend-empty" role="status">메뉴별 원가와 주간 중복 횟수를 계산하고 있습니다.</p>}
+              {recommendationError && <p className="recommend-inline-error" role="status">{recommendationError}</p>}
               {error && <p className="recommend-inline-error" role="alert">{error}</p>}
-              {!recommendedMenus.length && (
+              {!recommendationLoading && !recommendedMenus.length && (
                 <p className="recommend-empty">추천할 수 있는 다른 메뉴가 없습니다.</p>
               )}
 
