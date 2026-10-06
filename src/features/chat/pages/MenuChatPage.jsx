@@ -193,11 +193,10 @@ export default function MenuChatPage() {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`menu-chat-message ${
-                  message.role === 'user'
-                    ? 'menu-chat-message-user'
-                    : 'menu-chat-message-ai'
-                }`}
+                className={`menu-chat-message ${message.role === 'user'
+                  ? 'menu-chat-message-user'
+                  : 'menu-chat-message-ai'
+                  }`}
               >
                 {message.role === 'assistant' && (
                   <div className="menu-chat-avatar">
@@ -222,10 +221,10 @@ export default function MenuChatPage() {
 
                         const cost =
                           menu.cost_per_person !== null &&
-                          menu.cost_per_person !== undefined
+                            menu.cost_per_person !== undefined
                             ? `${Number(
-                                menu.cost_per_person
-                              ).toLocaleString()}원`
+                              menu.cost_per_person
+                            ).toLocaleString()}원`
                             : '가격 정보 없음'
 
                         return (
@@ -249,7 +248,7 @@ export default function MenuChatPage() {
                               to={`/menus?menuId=${menu.menu_id}`}
                               className="menu-chat-menu-button"
                             >
-                              메뉴에서 보기
+                              메뉴 상세 보기
                               <span>›</span>
                             </Link>
                           </div>
