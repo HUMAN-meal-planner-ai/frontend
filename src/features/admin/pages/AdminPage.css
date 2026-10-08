@@ -45,3 +45,16 @@
 @media (max-width: 620px) { .admin-sidebar { overflow-x: auto; }.admin-sidebar nav { min-width: max-content; }.price-admin-summary, .price-admin-grid { padding-left: 18px; padding-right: 18px; }.price-admin-toolbar { padding: 13px 18px; align-items: stretch; flex-direction: column; }.price-admin-toolbar select { width: 100%; min-width: 0; }.price-admin-toolbar span { margin-left: 0; }.price-admin-metrics { grid-template-columns: repeat(2, 1fr); }.price-ranking-table-card { margin-left: 18px; margin-right: 18px; } }
 @media (max-width: 620px) { .price-section-title { padding-left: 18px; padding-right: 18px; }.price-collection-summary { padding-left: 18px; padding-right: 18px; }.price-source-table-wrap { margin-left: 18px; margin-right: 18px; } }
 @media (prefers-reduced-motion: reduce) { .admin-spinner { animation: none; } }
+
+.menu-ingredient-search { display: flex; gap: 6px; }
+.menu-ingredient-search input { padding: 6px 10px; border: 1px solid #c2dbcd; border-radius: 8px; }
+.menu-ingredient-search button { padding: 6px 14px; border: none; border-radius: 8px; background: #2f9b64; color: #fff; font-weight: 700; cursor: pointer; }
+.menu-ingredient-layout { display: grid; grid-template-columns: 1fr 1.3fr; gap: 16px; }
+.menu-ingredient-list { max-height: 420px; overflow: auto; }
+.menu-ingredient-list tr.selected { background: #edf7f1; }
+.menu-ingredient-list tbody tr { cursor: pointer; }
+.menu-ingredient-mapping { padding: 1px 8px; border-radius: 8px; font-size: 12px; font-weight: 700; background: #f3f4f6; color: #4b5563; }
+.menu-ingredient-mapping.approved { background: #dcfce7; color: #166534; }
+.menu-ingredient-mapping.proposed { background: #fef3c7; color: #b45309; }
+.menu-ingredient-mapping.rejected { background: #fee2e2; color: #b91c1c; }
+@media (max-width: 840px) { .menu-ingredient-layout { grid-template-columns: 1fr; } }

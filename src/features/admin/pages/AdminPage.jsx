@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getAdminUsers, updateAdminUserRole } from '../api/adminApi'
 import ErrorLogPanel from '../components/ErrorLogPanel'
 import AdminPriceDataPanel from '../components/AdminPriceDataPanel'
+import AdminMenuIngredientPanel from '../components/AdminMenuIngredientPanel'
 import SystemStatusPanel from '../components/SystemStatusPanel'
 import './AdminPage.css'
 
@@ -214,7 +215,7 @@ export default function AdminPage({ user, onLogout }) {
             )}
           </section>
           </>}
-          {activeTab === 'prices' && <AdminPriceDataPanel />}
+          {activeTab === 'prices' && <><AdminPriceDataPanel /><AdminMenuIngredientPanel /></>}
           {activeTab === 'status' && <SystemStatusPanel />}
           {activeTab === 'logs' && <ErrorLogPanel />}
         </div>

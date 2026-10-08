@@ -244,3 +244,48 @@
   .menu-spec-cards { grid-template-columns: 1fr; }
 }
 
+
+.weekly-menu-price-score { margin-left: 4px; font-size: 0.72em; font-weight: 700; color: #059669; }
+.weekly-meal-price-score { margin-top: 6px; padding: 4px 8px; border-radius: 6px; background: #ecfdf5; color: #047857; font-size: 0.78rem; font-weight: 700; }
+.weekly-meal-price-score span { font-weight: 500; }
+
+.weekly-price-warning { display: block; color: #b45309; font-size: 0.72rem; font-weight: 600; }
+
+.weekly-price-detail { display: block; color: #475569; font-size: 0.72rem; }
+
+.weekly-menu-chip.needs-change { border-color: #e5484d; box-shadow: 0 0 0 1px #e5484d inset; }
+.weekly-change-needed { margin: 12px 0; padding: 12px 14px; border: 1px solid #f3c1c3; border-radius: 10px; background: #fff6f6; font-size: 14px; }
+.weekly-change-needed ul { margin: 8px 0 0; padding-left: 18px; }
+.weekly-change-needed li { margin: 4px 0; }
+.weekly-change-needed li button { border: 0; background: none; padding: 0; color: #b42318; font-weight: 600; cursor: pointer; text-decoration: underline; }
+
+.weekly-change-group { margin-top: 10px; padding-left: 8px; border-left: 4px solid #e5484d; }
+.weekly-change-group h4 { margin: 0 0 4px; font-size: 13px; }
+.weekly-change-group.change-menuRepeat { border-left-color: #f59f00; }
+.weekly-change-group.change-menuRepeat li button { color: #b45309; }
+.weekly-change-group.change-ingredientRepeat { border-left-color: #7c3aed; }
+.weekly-change-group.change-ingredientRepeat li button { color: #6d28d9; }
+.weekly-menu-chip.needs-change.change-menuRepeat { border-color: #f59f00; box-shadow: 0 0 0 1px #f59f00 inset; background: #fff8e6; }
+.weekly-menu-chip.needs-change.change-ingredientRepeat { border-color: #7c3aed; box-shadow: 0 0 0 1px #7c3aed inset; background: #f5f0ff; }
+
+.weekly-reconstruct-btn { padding: 8px 14px; border: 1px solid #2f7d4f; border-radius: 8px; background: #fff; color: #1f6b3f; font-weight: 700; cursor: pointer; }
+.weekly-reconstruct-btn:disabled { opacity: .5; cursor: not-allowed; }
+.reconstruct-modal-card { max-width: 860px; width: 94%; max-height: 86vh; overflow: auto; }
+.reconstruct-table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 8px 0; }
+.reconstruct-table th, .reconstruct-table td { padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: left; }
+
+.wholesale-price-cell { line-height: 1.3; }
+.wholesale-meta { display: block; color: #6b7280; font-size: 11px; }
+
+.price-source-badge { padding: 1px 6px; border-radius: 8px; font-weight: 600; }
+.price-source-badge.official { background: #e0f2fe; color: #0369a1; }
+.price-source-badge.estimated { background: #fef3c7; color: #b45309; }
+
+
+.search-nav-btn:disabled { opacity: .4; cursor: not-allowed; }
+.recommend-modal-footer .recommend-apply-btn { width: auto; height: auto; padding: 7px 14px; font-size: 12.5px; border-radius: 8px; }
+
+.risky-ingredient-row { background: #fff7f5; }
+.risk-tag { margin-left: 6px; padding: 1px 7px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+.risk-tag.warning { background: #fee2e2; color: #b91c1c; }
+.risk-tag.caution { background: #fef3c7; color: #b45309; }
