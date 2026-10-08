@@ -1,18 +1,43 @@
 import { useEffect, useState } from 'react'
+
 import { Link, useSearchParams } from 'react-router-dom'
+
 import api from '../../../api/axios'
+
 import { getMenuCostDetail } from '../../budget/api/costApi'
+
 import MealFitHeader from '../../../layouts/MealFitHeader'
+
 import {
   getMyFacility,
   getWeeklyMealPlan,
   saveMealPlan,
 } from '../../mealplan/api/mealPlanApi'
+
 import './MenuListPage.css'
 
 
 function displayMenuName(name) {
   return name?.replace(/"/g, '') || '이름 없는 메뉴'
+}
+
+
+function getNutritionValue(menu, ...keys) {
+  if (!menu) return null
+
+  for (const key of keys) {
+    const value = menu[key]
+
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== ''
+    ) {
+      return value
+    }
+  }
+
+  return null
 }
 
 
@@ -77,6 +102,7 @@ export default function MenuListPage() {
     searchParams.get('menuId')
 
   const [query, setQuery] = useState('')
+
   const [searchResults, setSearchResults] =
     useState(null)
 
@@ -86,6 +112,7 @@ export default function MenuListPage() {
   const [page, setPage] = useState(1)
 
   const [loading, setLoading] = useState(true)
+
   const [error, setError] = useState('')
 
   const [selectedMenu, setSelectedMenu] =
@@ -226,6 +253,41 @@ export default function MenuListPage() {
           ? {
               ...current,
               ingredients,
+
+              energyKcal:
+                detail.energyKcal ??
+                detail.energy_kcal ??
+                current.energyKcal ??
+                current.energy_kcal ??
+                null,
+
+              proteinG:
+                detail.proteinG ??
+                detail.protein_g ??
+                current.proteinG ??
+                current.protein_g ??
+                null,
+
+              fatG:
+                detail.fatG ??
+                detail.fat_g ??
+                current.fatG ??
+                current.fat_g ??
+                null,
+
+              carbohydrateG:
+                detail.carbohydrateG ??
+                detail.carbohydrate_g ??
+                current.carbohydrateG ??
+                current.carbohydrate_g ??
+                null,
+
+              sodiumMg:
+                detail.sodiumMg ??
+                detail.sodium_mg ??
+                current.sodiumMg ??
+                current.sodium_mg ??
+                null,
             }
           : current
       )
@@ -767,7 +829,7 @@ export default function MenuListPage() {
           </h1>
 
           <p className="menu-description">
-            메뉴명, 메뉴 코드, 분류를 기준으로
+            메뉴명, 메뉴 코드, 식재료 기준으로
             원하는 급식 메뉴를 검색해 보세요.
           </p>
 
@@ -786,7 +848,7 @@ export default function MenuListPage() {
               marginBottom: '12px',
             }}
           >
-            메뉴명, 메뉴 코드, 분류로 검색할 수 있어요.
+            메뉴명, 메뉴 코드, 식재료로 검색할 수 있어요.
           </p>
 
 
@@ -808,7 +870,7 @@ export default function MenuListPage() {
               <input
                 type="text"
                 aria-label="일반 메뉴 검색어"
-                placeholder="메뉴명, 식재료, 메뉴 코드, 분류를 검색하세요"
+                placeholder="메뉴명, 식재료, 메뉴 코드, 식재료를 검색하세요"
                 value={query}
                 onChange={(event) => {
                   const value =
@@ -1153,6 +1215,7 @@ export default function MenuListPage() {
               </div>
 
               <div className="menu-ai-banner-action">
+
                 <span>
                   AI에게 질문하기
                 </span>
@@ -1162,6 +1225,7 @@ export default function MenuListPage() {
                 >
                   →
                 </strong>
+
               </div>
 
             </Link>
@@ -1524,38 +1588,6 @@ export default function MenuListPage() {
                 )}
               </h3>
 
-
-              <div className="menu-detail-row">
-
-                <span>
-                  메뉴 코드
-                </span>
-
-                <strong>
-                  {
-                    selectedMenu.menuCode
-                  }
-                </strong>
-
-              </div>
-
-
-              <div className="menu-detail-row">
-
-                <span>
-                  식단 슬롯
-                </span>
-
-                <strong>
-                  {
-                    selectedMenu.slot ||
-                    '미분류'
-                  }
-                </strong>
-
-              </div>
-
-
               <div className="menu-detail-row">
 
                 <span>
@@ -1566,6 +1598,121 @@ export default function MenuListPage() {
                   {selectedMenu.weight !=
                   null
                     ? `${selectedMenu.weight}g`
+                    : '정보 없음'}
+                </strong>
+
+              </div>
+
+
+              <div className="menu-detail-row">
+
+                <span>
+                  열량
+                </span>
+
+                <strong>
+                  {getNutritionValue(
+                    selectedMenu,
+                    'energyKcal',
+                    'energy_kcal'
+                  ) != null
+                    ? `${getNutritionValue(
+                        selectedMenu,
+                        'energyKcal',
+                        'energy_kcal'
+                      )} kcal`
+                    : '정보 없음'}
+                </strong>
+
+              </div>
+
+
+              <div className="menu-detail-row">
+
+                <span>
+                  단백질
+                </span>
+
+                <strong>
+                  {getNutritionValue(
+                    selectedMenu,
+                    'proteinG',
+                    'protein_g'
+                  ) != null
+                    ? `${getNutritionValue(
+                        selectedMenu,
+                        'proteinG',
+                        'protein_g'
+                      )} g`
+                    : '정보 없음'}
+                </strong>
+
+              </div>
+
+
+              <div className="menu-detail-row">
+
+                <span>
+                  지방
+                </span>
+
+                <strong>
+                  {getNutritionValue(
+                    selectedMenu,
+                    'fatG',
+                    'fat_g'
+                  ) != null
+                    ? `${getNutritionValue(
+                        selectedMenu,
+                        'fatG',
+                        'fat_g'
+                      )} g`
+                    : '정보 없음'}
+                </strong>
+
+              </div>
+
+
+              <div className="menu-detail-row">
+
+                <span>
+                  탄수화물
+                </span>
+
+                <strong>
+                  {getNutritionValue(
+                    selectedMenu,
+                    'carbohydrateG',
+                    'carbohydrate_g'
+                  ) != null
+                    ? `${getNutritionValue(
+                        selectedMenu,
+                        'carbohydrateG',
+                        'carbohydrate_g'
+                      )} g`
+                    : '정보 없음'}
+                </strong>
+
+              </div>
+
+
+              <div className="menu-detail-row">
+
+                <span>
+                  나트륨
+                </span>
+
+                <strong>
+                  {getNutritionValue(
+                    selectedMenu,
+                    'sodiumMg',
+                    'sodium_mg'
+                  ) != null
+                    ? `${getNutritionValue(
+                        selectedMenu,
+                        'sodiumMg',
+                        'sodium_mg'
+                      )} mg`
                     : '정보 없음'}
                 </strong>
 
