@@ -75,3 +75,13 @@ export async function resolveAdminErrorLog(logId) {
   const { data } = await api.patch(`/api/admin/error-logs/${logId}/resolve`)
   return data
 }
+
+export async function searchAdminMenus(keyword = '', limit = 30) {
+  const { data } = await api.get('/api/admin/menu-ingredients', { params: { keyword, limit } })
+  return data
+}
+
+export async function getAdminMenuIngredients(menuId) {
+  const { data } = await api.get(`/api/admin/menu-ingredients/${menuId}`)
+  return data
+}

@@ -2,9 +2,10 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import MealFitHeader from '../../../layouts/MealFitHeader'
 import { getMenus, getMyFacility, getWeeklyMealPlan, saveMealPlan } from '../api/mealPlanApi'
-import { getAllMenuCosts, getMenuCostDetail } from '../../budget/api/costApi'
+import { getAllMenuCosts, getAllMenuRisks, getMenuCostDetail } from '../../budget/api/costApi'
 import { calculatePriceScore } from '../../budget/utils/budgetUtils'
-import { rankMenusForRecommendation } from '../utils/menuRecommendation'
+import { aggregatePriceInputs, buildMenuProfiles, calculatePriceFitScore, exceedsWeeklyLimits, buildWeeklyReconstruction, findMenusNeedingChange, isLowCostReliability, MAX_MENU_REPEAT_PER_WEEK, MAX_PRIMARY_INGREDIENT_USES_PER_WEEK, rankMenusForRecommendation } from '../utils/menuRecommendation'
+import { loadMenuPreferences, recordMenuAccepted, recordMenusRejected } from '../utils/menuPreference'
 import './WeeklyMealPlanPage.css'
 
 const MEAL_TYPE_LABELS = {
@@ -30,6 +31,12 @@ const MENU_SLOT_FILTERS = [
   { value: 'SIDE', label: '서브 반찬' },
   { value: 'KIMCHI', label: '김치' },
   { value: 'OTHER', label: '기타' },
+]
+
+const CHANGE_TYPE_GROUPS = [
+  { type: 'menuRepeat', label: '동일 메뉴 반복 초과', matches: (reason) => reason.startsWith('동일 메뉴') },
+  { type: 'ingredientRepeat', label: '주재료 사용 횟수 초과', matches: (reason) => /주 \d+회/.test(reason) && !reason.startsWith('동일 메뉴') },
+  { type: 'risk', label: '가격 위험·주의', matches: (reason) => reason.startsWith('가격') },
 ]
 
 function formatLocalDate(date) {
@@ -96,6 +103,12 @@ function WeeklyMealPlanPage() {
   const [weeklyPriceSummary, setWeeklyPriceSummary] = useState(null)
   const [weeklyPriceLoading, setWeeklyPriceLoading] = useState(false)
   const [weeklyPriceError, setWeeklyPriceError] = useState('')
+  const [menuUnitCosts, setMenuUnitCosts] = useState({})
+  const [menuUnpricedCounts, setMenuUnpricedCounts] = useState({})
+  const [menuRiskById, setMenuRiskById] = useState({})
+  const [menuProfileById, setMenuProfileById] = useState({})
+  const [reconstruction, setReconstruction] = useState(null)
+  const [reconstructionLoading, setReconstructionLoading] = useState(false)
   const [allMenus, setAllMenus] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -122,6 +135,7 @@ function WeeklyMealPlanPage() {
   // 메뉴 추천 모달 상태
   const [isRecommendOpen, setIsRecommendOpen] = useState(false)
   const [recommendedMenus, setRecommendedMenus] = useState([])
+  const [menuPreferences, setMenuPreferences] = useState(() => loadMenuPreferences())
   const [recommendationLoading, setRecommendationLoading] = useState(false)
   const [recommendationError, setRecommendationError] = useState('')
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false)
@@ -317,33 +331,158 @@ function WeeklyMealPlanPage() {
     setRecommendationLoading(true)
     setRecommendationError('')
 
-    let menuCosts = []
-    const targetCost = Number(facility?.targetFoodCost)
-    if (!Number.isFinite(targetCost) || targetCost <= 0) {
-      setRecommendationError('시설의 1인 목표 식재료비가 없어 예산 점수 없이 추천합니다.')
-    } else {
-      try {
-        menuCosts = await getAllMenuCosts({ mealCount: 1, targetCost })
-        if (!Array.isArray(menuCosts) || !menuCosts.length) {
-          menuCosts = []
-          setRecommendationError('메뉴 원가를 불러오지 못해 중복 점수만으로 추천합니다.')
-        }
-      } catch {
-        setRecommendationError('메뉴 원가 조회에 실패해 중복 점수만으로 추천합니다.')
-      }
+    // 다시 추천을 누르면 직전에 보여준 메뉴는 선호하지 않은 것으로 기록한다.
+    let preferences = menuPreferences
+    if (excludedMenuIds.length) {
+      preferences = recordMenusRejected(menuPreferences, excludedMenuIds)
+      setMenuPreferences(preferences)
     }
+
+    let menuCosts = []
+    let menuRisks = []
+    const targetCost = Number(facility?.targetFoodCost)
+    const hasTargetCost = Number.isFinite(targetCost) && targetCost > 0
+    if (!hasTargetCost) {
+      setRecommendationError('시설의 1인 목표 식재료비가 없어 예산 점수 없이 추천합니다.')
+    }
+
+    const [costResult, riskResult] = await Promise.allSettled([
+      hasTargetCost ? getAllMenuCosts({ mealCount: 1, targetCost }) : Promise.resolve([]),
+      getAllMenuRisks({ targetDate: selectedMenu?.mealDate }),
+    ])
+    if (costResult.status === 'fulfilled' && Array.isArray(costResult.value)) {
+      menuCosts = costResult.value
+    }
+    if (riskResult.status === 'fulfilled' && Array.isArray(riskResult.value)) {
+      menuRisks = riskResult.value
+    }
+    if (hasTargetCost && !menuCosts.length) {
+      setRecommendationError('메뉴 원가를 불러오지 못해 원가 점수 없이 추천합니다.')
+    } else if (!menuRisks.length) {
+      setRecommendationError('가격 상승률·위험도를 불러오지 못해 해당 점수 없이 추천합니다.')
+    }
+
+    // 교체되는 메뉴는 주간 반복 집계에서 제외한다.
+    let replacedOccurrenceSkipped = false
+    const remainingOccurrences = weeklyMenuOccurrences.filter((occurrence) => {
+      if (replacedOccurrenceSkipped) return true
+      const isReplaced = String(occurrence.menuId) === String(currentId) &&
+        occurrence.mealDate === selectedMenu?.mealDate &&
+        occurrence.mealType === selectedMenu?.mealType
+      replacedOccurrenceSkipped = isReplaced
+      return !isReplaced
+    })
 
     const rankedCandidates = rankMenusForRecommendation(
       unseenMenus.length ? unseenMenus : preferredPool,
-      weeklyMenuOccurrences,
+      remainingOccurrences,
       menuCosts,
-      Number.isFinite(targetCost) && targetCost > 0 && menuCosts.length ? targetCost : null,
+      hasTargetCost ? targetCost : null,
+      {
+        menuRisks,
+        menuProfiles: { ...buildMenuProfiles(allMenus, menuCosts), ...menuProfileById },
+        replacedMenu: menuById[currentId] || selectedMenu,
+        preferences,
+      },
     )
 
     setRecommendedMenus(rankedCandidates.slice(0, 4))
     setRecommendationLoading(false)
   }
 
+  // 주간 식단 재구성: 유지할 메뉴와 교체할 메뉴를 정해 대체 주간 식단안을 만든다.
+  const handleReconstructWeek = async () => {
+    if (!allMenus.length || !weeklyMenuOccurrences.length) return
+    const targetCost = Number(facility?.targetFoodCost)
+    const hasTargetCost = Number.isFinite(targetCost) && targetCost > 0
+    setReconstructionLoading(true)
+    setError('')
+    const weekStartDate = weeklyMenuOccurrences.map((item) => item.mealDate).filter(Boolean).sort()[0]
+    const [costResult, riskResult] = await Promise.allSettled([
+      hasTargetCost ? getAllMenuCosts({ mealCount: 1, targetCost }) : Promise.resolve([]),
+      getAllMenuRisks({ targetDate: weekStartDate }),
+    ])
+    const menuCosts = costResult.status === 'fulfilled' && Array.isArray(costResult.value) ? costResult.value : []
+    const riskMap = { ...menuRiskById }
+    if (riskResult.status === 'fulfilled' && Array.isArray(riskResult.value)) {
+      riskResult.value.forEach((risk) => { riskMap[risk.menuId] = risk })
+    }
+
+    const result = buildWeeklyReconstruction(
+      weeklyMenuOccurrences,
+      allMenus,
+      menuCosts,
+      hasTargetCost ? targetCost : null,
+      {
+        menuRisks: riskMap,
+        menuProfiles: { ...buildMenuProfiles(allMenus, menuCosts), ...menuProfileById },
+        menuById,
+        preferences: menuPreferences,
+      },
+    )
+    setReconstruction({
+      ...result,
+      notices: [
+        ...(hasTargetCost ? [] : ['목표 식재료비가 없어 가격 점수 없이 재구성했습니다.']),
+        ...(menuCosts.length || !hasTargetCost ? [] : ['메뉴 원가를 불러오지 못해 원가 점수 없이 재구성했습니다.']),
+      ],
+    })
+    setReconstructionLoading(false)
+  }
+
+  // 재구성 결과에서 해당 슬롯만 다음 순위 후보로 바꾼다.
+  const handleReroll = (target) => {
+    setReconstruction((current) => {
+      if (!current) return current
+      return {
+        ...current,
+        changes: current.changes.map((change) => {
+          if (change !== target || !change.alternatives?.length) return change
+          const currentIndex = change.alternatives.findIndex((menu) => String(menu.menuId) === String(change.to.menuId))
+          return { ...change, to: change.alternatives[(currentIndex + 1) % change.alternatives.length] }
+        }),
+      }
+    })
+  }
+
+  const handleApplyReconstruction = () => {
+    if (!reconstruction?.changes.length) {
+      setReconstruction(null)
+      return
+    }
+    setPlan((prevPlan) => {
+      if (!prevPlan?.meals) return prevPlan
+      const meals = prevPlan.meals.map((meal) => {
+        const slotChanges = reconstruction.changes.filter((change) =>
+          change.mealDate === meal.mealDate && change.mealType === meal.mealType)
+        if (!slotChanges.length) return meal
+        const items = meal.menuItems?.length
+          ? meal.menuItems
+          : (meal.menuName || '').split(',').filter(Boolean).map((name) => ({
+            menuName: name.trim(),
+            menuId: menuByName[name.trim()]?.menuId,
+          }))
+        const menuItems = items.map((item) => {
+          const itemId = item.menuId ?? menuByName[item.menuName?.trim()]?.menuId
+          const change = slotChanges.find((candidate) => String(candidate.from.menuId) === String(itemId))
+          return change ? { menuId: change.to.menuId, menuName: change.to.menuName } : item
+        })
+        return {
+          ...meal,
+          menuId: menuItems[0]?.menuId ?? meal.menuId,
+          menuName: menuItems.map((item) => item.menuName).join(', '),
+          menuItems,
+        }
+      })
+      return { ...prevPlan, meals }
+    })
+    reconstruction.changes.forEach((change) => {
+      setMenuPreferences((current) => recordMenuAccepted(current, change.to.menuId))
+    })
+    setHasChanges(true)
+    setMessage(`${reconstruction.changes.length}개 메뉴를 교체한 대체 식단안을 적용했습니다. [식단 저장]을 누르면 DB에 반영됩니다.`)
+    setReconstruction(null)
+  }
   const handleOpenAddMenu = (mealDate, mealType) => {
     setAddMenuTarget({ mealDate, mealType })
     setMenuSearch('')
@@ -392,7 +531,10 @@ function WeeklyMealPlanPage() {
 
     setHasChanges(true)
     setError('')
-    setMessage(`"${menu.menuName}" 메뉴를 추가했습니다. [식단 저장]을 누르면 DB에 반영됩니다.`)
+    const limitWarning = exceedsWeeklyLimits({ menuId: menu.menuId }, weeklyMenuOccurrences, menuProfileById)
+      ? ` ⚠ 주간 반복 상한(동일 메뉴 ${MAX_MENU_REPEAT_PER_WEEK}회·주재료 ${MAX_PRIMARY_INGREDIENT_USES_PER_WEEK}회)을 넘습니다.`
+      : ''
+    setMessage(`"${menu.menuName}" 메뉴를 추가했습니다. [식단 저장]을 누르면 DB에 반영됩니다.${limitWarning}`)
     setIsAddMenuOpen(false)
     handleSelectMenu({
       menuId: menuItem.menuId,
@@ -431,6 +573,7 @@ function WeeklyMealPlanPage() {
 
     setError('')
     setIsRecommendOpen(false)
+    setMenuPreferences((current) => recordMenuAccepted(current, recMenu.menuId))
 
     // plan.meals 복제 및 업데이트
     setPlan((prevPlan) => {
@@ -540,10 +683,28 @@ function WeeklyMealPlanPage() {
 
     setWeeklyPriceLoading(true)
     setWeeklyPriceError('')
-    Promise.allSettled(menuIds.map((menuId) => getMenuCostDetail(menuId, { mealCount: 1 })))
-      .then((results) => {
+    const weekStartDate = weeklyMenuOccurrences.map((item) => item.mealDate).filter(Boolean).sort()[0]
+    Promise.allSettled([
+      Promise.allSettled(menuIds.map((menuId) => getMenuCostDetail(menuId, { mealCount: 1 }))),
+      getAllMenuRisks({ targetDate: weekStartDate }),
+    ])
+      .then(([costSettled, riskSettled]) => {
         if (!active) return
+        const results = costSettled.value
+        const riskMap = {}
+        if (riskSettled.status === 'fulfilled' && Array.isArray(riskSettled.value)) {
+          riskSettled.value.forEach((risk) => { riskMap[risk.menuId] = risk })
+        }
+        setMenuRiskById(riskMap)
+        setMenuProfileById(buildMenuProfiles(
+          menuIds.map((menuId) => ({ menuId })),
+          results.map((result, index) => ({
+            menuId: menuIds[index],
+            details: result.status === 'fulfilled' ? result.value?.details || [] : [],
+          })),
+        ))
         const costByMenuId = new Map()
+        const unpricedByMenuId = new Map()
         let failedCount = 0
         results.forEach((result, index) => {
           if (result.status !== 'fulfilled') {
@@ -557,8 +718,14 @@ function WeeklyMealPlanPage() {
             return
           }
           costByMenuId.set(menuIds[index], perPersonCost)
+          unpricedByMenuId.set(
+            menuIds[index],
+            (result.value?.details || []).filter((detail) => !(Number(detail.standardUnitPrice) > 0) || detail.mappingType === 'CATEGORY_AVG').length,
+          )
         })
 
+        setMenuUnitCosts(Object.fromEntries(costByMenuId))
+        setMenuUnpricedCounts(Object.fromEntries(unpricedByMenuId))
         const mealSlotCount = new Set(weeklyMenuOccurrences.map((item) => `${item.mealDate}::${item.mealType}`)).size
         const attendeeCount = Math.max(1, Number(mealCount) || 1)
         const targetPerPerson = Number(facility?.targetFoodCost)
@@ -569,12 +736,20 @@ function WeeklyMealPlanPage() {
         )
         const actualCost = actualCostPerPerson * attendeeCount
 
+        const weeklyInput = aggregatePriceInputs(weeklyMenuOccurrences.map((item) => ({
+          costPerPerson: costByMenuId.get(item.menuId),
+          futureCostPerPerson: riskMap[item.menuId]?.futureCostPerPerson,
+          riskScore: riskMap[item.menuId]?.riskScore,
+        })))
+        const weeklyTargetPerPerson = Number.isFinite(targetPerPerson) ? targetPerPerson * mealSlotCount : null
+
         setWeeklyPriceSummary({
           actualCost,
           targetBudget,
-          score: failedCount || targetBudget == null
+          score: failedCount || targetBudget == null || !weeklyInput
             ? null
-            : calculatePriceScore(actualCost, targetBudget),
+            : calculatePriceFitScore({ ...weeklyInput, targetCost: weeklyTargetPerPerson }),
+          lowCost: isLowCostReliability(actualCostPerPerson, weeklyTargetPerPerson),
           mealSlotCount,
           failedCount,
         })
@@ -593,6 +768,74 @@ function WeeklyMealPlanPage() {
 
     return () => { active = false }
   }, [facility?.targetFoodCost, mealCount, weeklyMenuOccurrences])
+
+  // 메뉴 가격 점수: 한 끼 목표 원가를 그 끼니의 메뉴 수로 나눈 몫과 비교한다.
+  // 한끼 가격 점수: 한 끼 전체 1인 원가를 1인 목표 원가와 비교한다.
+  const { mealPriceScores, menuPriceScores } = useMemo(() => {
+    const target = Number(facility?.targetFoodCost)
+    const mealScores = {}
+    const menuScores = {}
+    if (!Number.isFinite(target) || target <= 0) return { mealPriceScores: mealScores, menuPriceScores: menuScores }
+
+    const slots = {}
+    weeklyMenuOccurrences.forEach((occurrence) => {
+      const key = `${occurrence.mealDate}::${occurrence.mealType}`
+      ;(slots[key] ||= []).push(occurrence)
+    })
+    Object.entries(slots).forEach(([key, occurrences]) => {
+      const known = occurrences.filter((item) => Number.isFinite(menuUnitCosts[item.menuId]))
+      const share = target / occurrences.length
+      const inputOf = (item) => ({
+        costPerPerson: menuUnitCosts[item.menuId],
+        futureCostPerPerson: menuRiskById[item.menuId]?.futureCostPerPerson,
+        riskScore: menuRiskById[item.menuId]?.riskScore,
+      })
+      known.forEach((item) => {
+        const cost = menuUnitCosts[item.menuId]
+        const risk = menuRiskById[item.menuId]
+        menuScores[`${key}::${item.menuId}`] = {
+          cost,
+          score: calculatePriceFitScore({ ...inputOf(item), increaseRate: risk?.increaseRate, targetCost: share }),
+          increaseRate: risk?.increaseRate ?? null,
+          riskLevel: risk?.riskLevel ?? null,
+          lowCost: isLowCostReliability(cost, share),
+          unpriced: menuUnpricedCounts[item.menuId] || 0,
+        }
+      })
+      if (known.length) {
+        const input = aggregatePriceInputs(known.map(inputOf))
+        mealScores[key] = {
+          cost: input.costPerPerson,
+          score: calculatePriceFitScore({ ...input, targetCost: target }),
+          increaseRate: input.increaseRate,
+          lowCost: isLowCostReliability(input.costPerPerson, target),
+          partial: known.length < occurrences.length,
+          unpriced: known.reduce((sum, item) => sum + (menuUnpricedCounts[item.menuId] || 0), 0),
+        }
+      }
+    })
+    return { mealPriceScores: mealScores, menuPriceScores: menuScores }
+  }, [facility?.targetFoodCost, menuUnitCosts, menuUnpricedCounts, menuRiskById, weeklyMenuOccurrences])
+
+  const menusNeedingChange = useMemo(
+    () => findMenusNeedingChange(weeklyMenuOccurrences, menuProfileById, menuRiskById),
+    [weeklyMenuOccurrences, menuProfileById, menuRiskById],
+  )
+  const menuChangeReasons = useMemo(() => {
+    const reasons = {}
+    menusNeedingChange.forEach((item) => {
+      reasons[`${item.mealDate}::${item.mealType}::${item.menuId}`] = item
+    })
+    return reasons
+  }, [menusNeedingChange])
+
+  const selectedSlotKey = selectedMenu ? `${selectedMenu.mealDate}::${selectedMenu.mealType}` : null
+  const selectedMenuPrice = selectedSlotKey
+    ? menuPriceScores[`${selectedSlotKey}::${resolveMenuId(selectedMenu.menuName, selectedMenu.menuId)}`]
+    : null
+  const selectedMealPrice = selectedSlotKey ? mealPriceScores[selectedSlotKey] : null
+  const unpricedIngredientCount = (ingredientDetails?.details || [])
+    .filter((detail) => !(Number(detail.standardUnitPrice) > 0) || detail.mappingType === 'CATEGORY_AVG').length
 
   useEffect(() => {
     let active = true
@@ -817,6 +1060,15 @@ function WeeklyMealPlanPage() {
             />
             <button
               type="button"
+              className="weekly-reconstruct-btn"
+              onClick={handleReconstructWeek}
+              disabled={reconstructionLoading || loading || !weeklyMenuOccurrences.length}
+              title="가격 예측·원가 재평가 결과로 유지할 메뉴와 교체할 메뉴를 정해 대체 식단안을 만듭니다"
+            >
+              {reconstructionLoading ? '재구성 중...' : '🔄 주간 식단 재구성'}
+            </button>
+            <button
+              type="button"
               className={`weekly-save-header-btn ${hasChanges ? 'has-changes' : ''}`}
               onClick={handleSaveWeeklyPlan}
               disabled={saveLoading || loading}
@@ -858,13 +1110,13 @@ function WeeklyMealPlanPage() {
                   </strong>
                   <span className="weekly-score-caption">
                     {weeklyPriceSummary?.mealSlotCount
-                      ? `${weeklyPriceSummary.mealSlotCount}개 끼니 · ${mealCount}명 기준`
-                      : '주간 식단 메뉴 원가 기준'}
+                      ? `${weeklyPriceSummary.mealSlotCount}개 끼니 · ${mealCount}명 기준${weeklyPriceSummary.lowCost ? ' · 식재료 원가 낮음(참고용)' : ''}`
+                      : '주간 식단 메뉴 원가·상승률·위험도 기준'}
                   </span>
                 </div>
                 <div className="weekly-price-metrics">
                   <div>
-                    <span>1인 목표 급식비</span>
+                    <span>1인 목표 식재료비</span>
                     <strong>{facility?.targetFoodCost == null ? '-' : `${formatNumber(facility.targetFoodCost)}원`}</strong>
                   </div>
                   <div>
@@ -914,6 +1166,39 @@ function WeeklyMealPlanPage() {
               </div>
             </section>
 
+            <section className="weekly-change-needed" aria-label="변경 필요 메뉴">
+              <strong>변경 필요 메뉴 {menusNeedingChange.length}개</strong>
+              {menusNeedingChange.length === 0 && (
+                <span> · 가격 위험, 동일 메뉴 반복(주 {MAX_MENU_REPEAT_PER_WEEK}회 초과), 주재료 과다 사용 메뉴가 없습니다.</span>
+              )}
+              {CHANGE_TYPE_GROUPS.map((group) => {
+                const items = menusNeedingChange.filter((item) => item.types.includes(group.type))
+                if (!items.length) return null
+                return (
+                  <div className={`weekly-change-group change-${group.type}`} key={group.type}>
+                    <h4>{group.label} ({items.length}개)</h4>
+                    <ul>
+                      {items.map((item) => (
+                        <li key={`${group.type}-${item.mealDate}-${item.mealType}-${item.menuId}`}>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectMenu({
+                              menuId: item.menuId,
+                              menuName: item.menuName,
+                              mealDate: item.mealDate,
+                              mealType: item.mealType,
+                            })}
+                          >
+                            {formatShortDate(item.mealDate)} {MEAL_TYPE_LABELS[item.mealType]} · {item.menuName}
+                          </button>
+                          <span> — {item.reasons.filter((reason) => group.matches(reason)).join(', ')}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              })}
+            </section>
             <section className="weekly-meal-board" aria-label="주간 식단 목록">
               <div className="weekly-board-corner">구분</div>
               {dates.map((date) => (
@@ -947,21 +1232,35 @@ function WeeklyMealPlanPage() {
                               selectedMenu.menuName === item?.menuName
                             const menuId = item?.menuId ?? menuByName[item?.menuName?.trim()]?.menuId
                             const isIngredientHighlighted = highlightedIngredientMenuIds.has(String(menuId))
+                            const resolvedMenuId = resolveMenuId(item?.menuName, menuId)
+                            const menuPrice = menuPriceScores[`${date}::${mealType}::${resolvedMenuId}`]
+                            const changeInfo = menuChangeReasons[`${date}::${mealType}::${resolvedMenuId}`]
+                            const changeReasons = changeInfo?.reasons
+                            const changeClass = changeInfo
+                              ? CHANGE_TYPE_GROUPS.find((group) => changeInfo.types.includes(group.type))?.type
+                              : ''
 
                             return (
                               <div className="weekly-menu-chip-wrapper" key={`item-${date}-${mealIdx}-${itemIdx}`}>
                                 <button
                                   type="button"
-                                  className={`weekly-menu-chip ${isSelected ? 'selected' : ''} ${isIngredientHighlighted ? 'ingredient-highlighted' : ''}`}
+                                  className={`weekly-menu-chip ${isSelected ? 'selected' : ''} ${isIngredientHighlighted ? 'ingredient-highlighted' : ''} ${changeReasons ? `needs-change change-${changeClass}` : ''}`}
                                   onClick={() => handleSelectMenu({
                                     menuId: item?.menuId,
                                     menuName: item?.menuName,
                                     mealDate: date,
                                     mealType,
                                   })}
-                                  title={`${item?.menuName || ''} 식재료 및 중량 조회`}
+                                  title={changeReasons
+                                    ? `변경 필요: ${changeReasons.join(', ')}`
+                                    : menuPrice
+                                    ? `${item?.menuName || ''} · 1인 ${formatNumber(menuPrice.cost)}원 · 메뉴 가격 점수 ${Math.round(menuPrice.score)}점`
+                                    : `${item?.menuName || ''} 식재료 및 중량 조회`}
                                 >
                                   {item?.menuName}
+                                  {menuPrice && (
+                                    <small className="weekly-menu-price-score"> {Math.round(menuPrice.score)}점{menuPrice.unpriced > 0 || menuPrice.lowCost ? '*' : ''}</small>
+                                  )}
                                 </button>
                                 <button
                                   type="button"
@@ -976,6 +1275,15 @@ function WeeklyMealPlanPage() {
                             )
                           })
                         })}
+                        {mealPriceScores[`${date}::${mealType}`] && (
+                          <div className="weekly-meal-price-score">
+                            한끼 가격 {Math.round(mealPriceScores[`${date}::${mealType}`].score)}점{mealPriceScores[`${date}::${mealType}`].unpriced > 0 || mealPriceScores[`${date}::${mealType}`].lowCost ? ' (참고용)' : ''}
+                            <span> · 1인 {formatNumber(mealPriceScores[`${date}::${mealType}`].cost)}원{mealPriceScores[`${date}::${mealType}`].partial ? ' (일부)' : ''}</span>
+                            {mealPriceScores[`${date}::${mealType}`].unpriced > 0 && (
+                              <span className="weekly-price-warning"> ⚠ 단가 미등록 식재료 {mealPriceScores[`${date}::${mealType}`].unpriced}개 포함</span>
+                            )}
+                          </div>
+                        )}
                         <button
                           type="button"
                           className="weekly-add-menu-btn"
@@ -1166,6 +1474,26 @@ function WeeklyMealPlanPage() {
                         {ingredientDetails?.costPerPerson != null ? `${formatNumber(ingredientDetails.costPerPerson)}원` : '-'}
                       </strong>
                     </div>
+                    <div className="spec-card">
+                      <span className="spec-label">메뉴 가격 점수 / 한끼 가격 점수</span>
+                      <strong className="spec-value text-emerald">
+                        {selectedMenuPrice ? `${Math.round(selectedMenuPrice.score)}점` : '-'} / {selectedMealPrice ? `${Math.round(selectedMealPrice.score)}점` : '-'}
+                      </strong>
+                      {selectedMenuPrice && (
+                        <span className="weekly-price-detail">
+                          상승률 {selectedMenuPrice.increaseRate == null ? '-' : `${selectedMenuPrice.increaseRate}%`}
+                          {selectedMenuPrice.riskLevel ? ` · 위험도 ${selectedMenuPrice.riskLevel}` : ''}
+                        </span>
+                      )}
+                      {(selectedMenuPrice?.lowCost || selectedMealPrice?.lowCost) && (
+                        <span className="weekly-price-warning">⚠ 식재료 원가가 목표 식재료비 대비 너무 낮아 참고용</span>
+                      )}
+                      {unpricedIngredientCount > 0 && (
+                        <span className="weekly-price-warning">
+                          ⚠ 단가 미등록(카테고리 추정) 식재료 {unpricedIngredientCount}개 · 참고용
+                        </span>
+                      )}
+                    </div>
                     <div className="spec-card highlight">
                       <span className="spec-label">총 소요 식재료비 ({mealCount}명)</span>
                       <strong className="spec-value text-emerald">
@@ -1224,7 +1552,7 @@ function WeeklyMealPlanPage() {
                         <th>식재료 분류</th>
                         <th>1인 기준 중량</th>
                         <th>총 필요 중량 ({mealCount}인)</th>
-                        <th>기준 단가(1g당)</th>
+                        <th>현재 도매가</th>
                         <th>1인 소요액</th>
                         <th>총 예상 비용</th>
                       </tr>
@@ -1236,14 +1564,24 @@ function WeeklyMealPlanPage() {
                         const unitPrice = Number(ing.standardUnitPrice || 0)
                         const singleCost = Number(ing.lineCost || singleQty * unitPrice)
                         const totalCost = singleCost * mealCount
+                        const ingRisk = (menuRiskById[selectedMenu?.menuId]?.riskIngredients || []).find((risk) =>
+                          String(risk.ingredientId) === String(ing.ingredientId))
+                        const ingRiskLevel = ingRisk?.ingredientRiskLevel
+                        const isRiskyIngredient = ingRiskLevel === 'WARNING' || ingRiskLevel === 'CAUTION'
 
                         return (
-                          <tr key={ing.ingredientId || idx} className={ing.isPrimary ? 'primary-ingredient-row' : ''}>
+                          <tr key={ing.ingredientId || idx} className={[ing.isPrimary ? 'primary-ingredient-row' : '', isRiskyIngredient ? 'risky-ingredient-row' : ''].join(' ').trim()}>
                             <td className="col-center">{idx + 1}</td>
                             <td className="col-name">
                               <div className="ingredient-name-cell">
                                 <strong>{ing.ingredientName}</strong>
                                 {ing.isPrimary && <span className="primary-tag">주재료</span>}
+                                {isRiskyIngredient && (
+                                  <span className={`risk-tag ${ingRiskLevel === 'WARNING' ? 'warning' : 'caution'}`} title={ingRisk.riskReason || ''}>
+                                    {ingRiskLevel === 'WARNING' ? '가격 경고' : '가격 주의'}
+                                    {ingRisk.unitPriceIncreaseRate != null ? ` +${Number(ingRisk.unitPriceIncreaseRate).toFixed(1)}%` : ''}
+                                  </span>
+                                )}
                               </div>
                             </td>
                             <td className="col-center">
@@ -1251,7 +1589,19 @@ function WeeklyMealPlanPage() {
                             </td>
                             <td className="col-right">{formatWeight(singleQty)}</td>
                             <td className="col-right highlight-weight">{formatWeight(totalQty)}</td>
-                            <td className="col-right">{unitPrice > 0 ? `${unitPrice.toFixed(2)}원/g` : '-'}</td>
+                            <td className="col-right wholesale-price-cell">
+                              {unitPrice > 0 ? (
+                                <>
+                                  <strong>{formatNumber(Math.round(unitPrice * 1000))}원/kg</strong>
+                                  <small className="wholesale-meta">
+                                    <span className={`price-source-badge ${(ing.estimated || ing.mappingType === 'CATEGORY_AVG') ? 'estimated' : 'official'}`}>
+                                      {(ing.estimated || ing.mappingType === 'CATEGORY_AVG') ? '추정가(KAMIS 미매핑)' : (ing.priceSource || '출처 미상')}
+                                    </span>
+                                    {ing.priceDate ? ` · 기준일 ${String(ing.priceDate)}` : ''}
+                                  </small>
+                                </>
+                              ) : '-'}
+                            </td>
                             <td className="col-right">{formatNumber(singleCost)}원</td>
                             <td className="col-right col-cost">{formatNumber(totalCost)}원</td>
                           </tr>
@@ -1290,7 +1640,7 @@ function WeeklyMealPlanPage() {
                   <span className="recommend-badge">AI ALTERNATIVE</span>
                   <h3>💡 메뉴 추천</h3>
                   <p className="recommend-desc">
-                    <strong>{selectedMenu?.menuName}</strong> 대신 사용할 메뉴입니다. 중복 회피와 예산 적합 점수를 함께 반영합니다.
+                    <strong>{selectedMenu?.menuName}</strong> 대신 사용할 메뉴입니다. 가격·영양·적합성·다양성·선호도 점수를 가중합해 추천합니다.
                   </p>
                 </div>
                 <button
@@ -1315,7 +1665,9 @@ function WeeklyMealPlanPage() {
                     <h4>{rec.menuName}</h4>
                     <p className="recommend-subtext">{rec.subCategory || '균형 잡힌 식단 추천 메뉴'}</p>
                     <p className="recommend-frequency">
-                      중복 회피 {rec.duplicationAvoidanceScore}점 · 예산 {rec.budgetFitScore == null ? '미적용' : `${rec.budgetFitScore}점`}
+                      가격 {rec.priceScore == null ? '미적용' : `${rec.priceScore}점`} · 다양성 {rec.duplicationAvoidanceScore}점
+                      · 영양 {rec.nutritionScore == null ? '미적용' : `${rec.nutritionScore}점`} · 적합 {rec.fitScore == null ? '미적용' : `${rec.fitScore}점`} · 선호 {rec.preferenceScore}점
+                      {rec.increaseRate == null ? '' : ` · 예상 상승률 ${rec.increaseRate}%`}
                       {rec.costPerPerson == null ? ' · 원가 미등록' : ` · 1인 ${formatNumber(rec.costPerPerson)}원`}
                       {' · '}{rec.weeklyOccurrenceCount === 0 ? '이번 주 미편성' : `이번 주 ${rec.weeklyOccurrenceCount}회`}
                     </p>
@@ -1362,6 +1714,76 @@ function WeeklyMealPlanPage() {
           </div>
         )}
 
+        {reconstruction && (
+          <div className="recommend-modal-backdrop" onClick={() => setReconstruction(null)}>
+            <section
+              className="recommend-modal-card reconstruct-modal-card"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="reconstruct-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="recommend-modal-header">
+                <div>
+                  <span className="recommend-badge">WEEKLY RECONSTRUCTION</span>
+                  <h2 id="reconstruct-title">대체 주간 식단안</h2>
+                  <p className="recommend-desc">
+                    유지 {reconstruction.keeps}개 · 교체 {reconstruction.changes.length}개
+                    {reconstruction.unresolved.length > 0 && ` · 대체 후보 없음 ${reconstruction.unresolved.length}개`}
+                  </p>
+                </div>
+                <button type="button" className="modal-close-btn" onClick={() => setReconstruction(null)} aria-label="닫기">✕</button>
+              </div>
+              {reconstruction.notices.map((notice) => (
+                <p className="recommend-inline-error" role="status" key={notice}>{notice}</p>
+              ))}
+              {reconstruction.changes.length === 0 ? (
+                <p className="recommend-empty">교체가 필요한 메뉴가 없어 현재 식단을 그대로 유지합니다.</p>
+              ) : (
+                <table className="reconstruct-table">
+                  <thead>
+                    <tr><th>일정</th><th>기존 메뉴</th><th>교체 메뉴</th><th>교체 사유</th><th>가격 점수</th><th>재추천</th></tr>
+                  </thead>
+                  <tbody>
+                    {reconstruction.changes.map((change) => (
+                      <tr key={`${change.mealDate}-${change.mealType}-${change.from.menuId}`}>
+                        <td>{formatShortDate(change.mealDate)} {MEAL_TYPE_LABELS[change.mealType]}</td>
+                        <td>{change.from.menuName}</td>
+                        <td><strong>{change.to.menuName}</strong></td>
+                        <td>{change.reasons.join(', ')}</td>
+                        <td>{change.to.priceScore != null ? `${change.to.priceScore}점` : '-'}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="search-nav-btn"
+                            disabled={(change.alternatives?.length || 0) < 2}
+                            onClick={() => handleReroll(change)}
+                          >
+                            다른 후보
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {reconstruction.unresolved.length > 0 && (
+                <p className="recommend-inline-error" role="status">
+                  대체 후보가 없는 메뉴: {reconstruction.unresolved.map((item) => item.menuName).join(', ')}
+                </p>
+              )}
+              <div className="recommend-modal-footer">
+                <span>적용해도 [식단 저장] 전에는 DB에 반영되지 않습니다.</span>
+                <div className="recommend-modal-actions">
+                  <button type="button" className="search-nav-btn" onClick={() => setReconstruction(null)}>닫기</button>
+                  {reconstruction.changes.length > 0 && (
+                    <button type="button" className="recommend-apply-btn" onClick={handleApplyReconstruction}>식단안 적용</button>
+                  )}
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
         {isAddMenuOpen && (
           <div className="recommend-modal-backdrop" onClick={() => setIsAddMenuOpen(false)}>
             <section
@@ -1440,4 +1862,11 @@ function WeeklyMealPlanPage() {
 }
 
 export default WeeklyMealPlanPage
+
+
+
+
+
+
+
 
