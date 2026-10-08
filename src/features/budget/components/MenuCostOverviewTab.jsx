@@ -1,6 +1,20 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { calculatePriceScore, formatCurrency, formatWon, checkIsExceeded, getExceededAmount } from '../utils/budgetUtils';
 
+// 페이지 번호 생성 헬퍼
+const getPageNumbers = (currentPage, totalPages, maxVisible = 5) => {
+  const pages = [];
+  let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let end = Math.min(totalPages, start + maxVisible - 1);
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+  return pages;
+};
+
 export default function MenuCostOverviewTab({
   costMode,
   setCostMode,
@@ -67,6 +81,19 @@ export default function MenuCostOverviewTab({
     return filtered.length > 0 ? filtered : menuCosts;
   }, [menuCosts, plannedMenuNamesList, showOnlyPlanned]);
 
+  // 페이징 상태
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  const totalItems = displayedMenuCosts.length;
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+
+  useEffect(() => {
+    setPage(1);
+  }, [displayedMenuCosts.length, showOnlyPlanned]);
+
+  const startIndex = (page - 1) * pageSize;
+  const paginatedMenuCosts = displayedMenuCosts.slice(startIndex, startIndex + pageSize);
+
   // 표시된 메뉴 기준 파생 요약 통계 계산
   const summary = useMemo(() => {
     return displayedMenuCosts.reduce((totals, menu) => {
@@ -113,13 +140,13 @@ export default function MenuCostOverviewTab({
             className={`segment-btn ${costMode === 'FUTURE' ? 'active' : ''}`}
             onClick={() => setCostMode('FUTURE')}
           >
-            미래 예측가 ({appliedParams.targetDate})
+            미래 예측가 ({appliedParams?.targetDate || '선택일자'})
           </button>
         </div>
         <span className="control-caption">
           {costMode === 'CURRENT'
             ? 'KAMIS 최신 실거래 식재료 가격 기준'
-            : `${appliedParams.targetDate} 7일 가격 예측 모델 적용`}
+            : `${appliedParams?.targetDate || '선택일자'} 7일 가격 예측 모델 적용`}
         </span>
       </div>
 
@@ -130,7 +157,7 @@ export default function MenuCostOverviewTab({
           <strong className="card-number">{formatCurrency(summary.totalCurrentCost)}</strong>
           <span className="card-sub-info">
             {showOnlyPlanned
-              ? `편성 메뉴 ${displayedMenuCosts.length}종 (회당 ${appliedParams.mealCount}명)`
+              ? `편성 메뉴 ${displayedMenuCosts.length}종 (회당 ${appliedParams?.mealCount || 1}명)`
               : `전체 메뉴 ${displayedMenuCosts.length}종 합산`}
           </span>
         </div>
@@ -138,7 +165,7 @@ export default function MenuCostOverviewTab({
         <div className="budget-stat-card">
           <span className="card-kicker">목표 예산 총액</span>
           <strong className="card-number">{formatCurrency(summary.totalTargetCost)}</strong>
-          <span className="card-sub-info">1인당 {formatWon(appliedParams.targetCost)} 기준</span>
+          <span className="card-sub-info">1인당 {formatWon(appliedParams?.targetCost)} 기준</span>
         </div>
 
         <div className={`budget-stat-card ${summary.totalExceeded > 0 ? 'card-alert' : 'card-safe'}`}>
@@ -214,7 +241,7 @@ export default function MenuCostOverviewTab({
                 <th>메뉴 ID</th>
                 <th>메뉴명</th>
                 <th>1인분 원가</th>
-                <th>총 예상 원가 ({appliedParams?.mealCount}명)</th>
+                <th>총 예상 원가 ({appliedParams?.mealCount || 1}명)</th>
                 <th>목표 단가</th>
                 <th>상태</th>
               </tr>
@@ -249,14 +276,14 @@ export default function MenuCostOverviewTab({
                   </td>
                 </tr>
               ) : (
-                displayedMenuCosts.map((item) => {
+                paginatedMenuCosts.map((item, idx) => {
                   const isSelected = selectedMenuId === item.menuId;
                   const isExceeded = checkIsExceeded(item, appliedParams?.targetCost);
                   const excAmt = getExceededAmount(item, appliedParams?.targetCost);
                   const isPlanned = plannedMenuNamesList.some(p => normalize(p) === normalize(item.menuName) || normalize(p).includes(normalize(item.menuName)));
                   return (
                     <tr
-                      key={item.menuId}
+                      key={item.menuId || startIndex + idx}
                       className={`table-clickable-row ${isSelected ? 'row-active' : ''}`}
                       onClick={() => onSelectMenu(item.menuId)}
                     >
@@ -286,6 +313,45 @@ export default function MenuCostOverviewTab({
             </tbody>
           </table>
         </div>
+
+        {/* 페이징 컨트롤 */}
+        {totalPages > 1 && (
+          <div className="budget-pagination-bar">
+            <span className="pagination-info-text">
+              전체 {totalItems}개 중 <strong>{startIndex + 1} - {Math.min(startIndex + pageSize, totalItems)}</strong>번째 표시
+            </span>
+            <div className="pagination-btn-group">
+              <button
+                type="button"
+                className="pagination-nav-btn"
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                title="이전 페이지"
+              >
+                ‹
+              </button>
+              {getPageNumbers(page, totalPages).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  type="button"
+                  className={`pagination-num-btn ${page === pageNum ? 'active' : ''}`}
+                  onClick={() => setPage(pageNum)}
+                >
+                  {pageNum}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="pagination-nav-btn"
+                disabled={page === totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                title="다음 페이지"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 세부 식재료 단가 계산식 */}
