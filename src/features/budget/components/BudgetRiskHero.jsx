@@ -20,7 +20,7 @@ export default function BudgetRiskHero({
   
   const budgetMonth = budgetUsage?.yearMonth
     || budgetRisk?.budgetMonth
-    || appliedParams.baseDate.slice(0, 7)
+    || (appliedParams?.baseDate ? appliedParams.baseDate.slice(0, 7) : '')
     || '';
 
   useEffect(() => {
