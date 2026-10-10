@@ -41,7 +41,7 @@ const getMonthCalendar = (monthDate) => {
 const getMonthLabel = (date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월 식단`
 const getMonthInputValue = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 
-function MealPlanPage() {
+function MealPlanPage({ onLogout }) {
   const navigate = useNavigate()
   const [displayMonth, setDisplayMonth] = useState(() => {
     const current = new Date()
@@ -112,7 +112,7 @@ function MealPlanPage() {
 
   return (
     <main className="meal-plan-page">
-      <MealFitHeader />
+      <MealFitHeader onLogout={onLogout} />
 
       <section className="meal-plan-content">
         <div className="meal-plan-heading">
@@ -121,11 +121,10 @@ function MealPlanPage() {
             <h1>이번 달 식단</h1>
             <p>주간 식단을 확인하고 필요한 메뉴를 직접 편성하세요.</p>
           </div>
-          <div className="meal-plan-heading-summary">
-            <span className="menu-count">메뉴 {menus.length}개 연결됨</span>
-            <div className="meal-plan-monthly-budget" aria-live="polite">
-              <span>{displayMonth.getFullYear()}년 {displayMonth.getMonth() + 1}월 저장 예산</span>
-              <strong>
+          <div className="header-meta-pill" aria-live="polite">
+            <span>메뉴 <strong>{menus.length}개</strong> 연결됨</span>
+            <span className="header-pill-divider" />
+            <span>{displayMonth.getFullYear()}년 {displayMonth.getMonth() + 1}월 저장 예산 <strong>
                 {monthlyBudgetError
                   ? '불러오기 실패'
                   : !selectedMonthBudget
@@ -133,8 +132,7 @@ function MealPlanPage() {
                     : selectedMonthBudget.budgetAmount == null
                       ? '저장된 예산 없음'
                       : `${Number(selectedMonthBudget.budgetAmount).toLocaleString('ko-KR')}원`}
-              </strong>
-            </div>
+            </strong></span>
           </div>
         </div>
 

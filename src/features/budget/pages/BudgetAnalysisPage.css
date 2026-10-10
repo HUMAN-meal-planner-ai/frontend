@@ -4,18 +4,18 @@
 
 .budget-root-layout {
   min-height: 100vh;
-  background: #f7faf7;
+  background: var(--page-bg);
   color: #19382a;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Noto Sans KR', sans-serif;
 }
 
 .budget-main-wrapper {
   position: relative;
-  padding: 40px clamp(24px, 5vw, 80px) 90px;
+  padding: 68px 32px 100px;
 }
 
 .budget-content-container {
-  max-width: 1280px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -37,22 +37,23 @@
 
 .budget-intro-row h1 {
   margin: 0 0 10px;
-  color: #173f2d;
-  font-size: clamp(32px, 3.8vw, 48px);
-  line-height: 1.15;
-  letter-spacing: -2px;
+  color: var(--text-title);
+  font-size: var(--fs-page-title);
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: var(--ls-page-title);
 }
 
 .budget-intro-row h1 em {
-  color: #38a369;
+  color: inherit;
   font-style: normal;
 }
 
 .budget-intro-desc {
   margin: 0;
-  color: #677d70;
-  font-size: 15px;
-  line-height: 1.6;
+  color: var(--text-lead);
+  font-size: var(--fs-lead);
+  line-height: 1.7;
   max-width: 680px;
 }
 
@@ -539,13 +540,12 @@
 
 /* 글래스 패널 */
 .budget-glass-panel {
-  border: 1px solid rgba(203, 223, 209, 0.86);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 16px 45px rgba(44, 92, 62, 0.07);
-  backdrop-filter: blur(18px);
-  margin-bottom: 24px;
-  padding: 24px 28px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  margin-bottom: var(--section-gap);
+  padding: var(--card-pad);
 }
 
 .panel-header-bar {
@@ -2910,3 +2910,10 @@
   border-color: #20784a;
 }
 
+
+.meal-chip-top { flex-wrap: wrap; row-gap: 2px; }
+.meal-slot-tag, .meal-chip-cost { white-space: nowrap; }
+.meal-chip-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.day-meal-chip { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 3px; min-width: 0; }
+.day-meal-chip .meal-chip-menus { min-width: 0; }

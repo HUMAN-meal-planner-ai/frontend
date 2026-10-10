@@ -209,7 +209,7 @@
 .meal-plan-header { display: flex; align-items: center; justify-content: space-between; height: 72px; padding: 0 6vw; border-bottom: 1px solid #dfe8e2; background: #fff; }
 .meal-plan-header strong { color: #173728; font: 700 22px 'DM Sans', sans-serif; }.meal-plan-header strong span { color: #2f9b64; }
 .text-button { border: 0; padding: 8px 0; color: #5e7669; background: none; font-weight: 700; }
-.meal-plan-content { max-width: 1100px; margin: auto; padding: 68px 32px; }.meal-plan-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; }.meal-plan-heading h1 { margin: 0 0 12px; color: #173728; font-size: 42px; letter-spacing: -1.5px; }.meal-plan-heading p:not(.eyebrow) { margin: 0; color: var(--muted); }.menu-count { padding: 9px 13px; border-radius: 20px; color: #27784e; background: #eaf7ef; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.meal-plan-content { max-width: 1100px; margin: auto; padding: 68px 32px; }.meal-plan-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; }.meal-plan-heading p:not(.eyebrow) { margin: 0; color: var(--muted); }.menu-count { padding: 9px 13px; border-radius: 20px; color: #27784e; background: #eaf7ef; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .meal-plan-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 38px; padding: 24px; border: 1px solid #dfe9e2; border-radius: 16px; background: #fff; }.meal-plan-controls label { display: flex; flex-direction: column; gap: 8px; color: #2c4639; font-size: 12px; font-weight: 800; }.meal-plan-controls input { height: 46px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; color: #203e2f; background: #fff; }.meal-plan-actions { display: flex; grid-column: 1 / -1; gap: 10px; }.meal-plan-actions button { min-height: 48px; margin-top: 0; padding: 0 18px; }.meal-plan-actions .secondary-button { flex: 1; }
 .empty-plan { display: flex; flex-direction: column; gap: 8px; margin-top: 22px; padding: 52px 24px; border: 1px dashed #c9dbce; border-radius: 16px; color: #6c8075; text-align: center; background: rgba(255,255,255,.7); }.empty-plan strong { color: #315241; }
 
@@ -299,3 +299,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+
+.header-logout-button { padding: 0; border: 0; background: transparent; font-family: inherit; cursor: pointer; }
+
+.landing-header.mealfit-header .landing-auth-actions { gap: 18px; }

@@ -92,7 +92,7 @@ const MENU_SLOT_FILTERS = [
 ]
 
 
-export default function MenuListPage() {
+export default function MenuListPage({ onLogout }) {
   const [menus, setMenus] = useState([])
 
   const [searchParams, setSearchParams] =
@@ -730,8 +730,7 @@ export default function MenuListPage() {
   ) => {
     event.preventDefault()
 
-    const keyword =
-      query.trim()
+    const keyword = query.trim()
 
     if (!keyword) {
       setSearchResults(null)
@@ -812,7 +811,7 @@ export default function MenuListPage() {
     <div className="menu-page">
 
       {/* HEADER */}
-      <MealFitHeader />
+      <MealFitHeader onLogout={onLogout} />
 
 
       <main className="menu-content">

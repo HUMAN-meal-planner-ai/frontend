@@ -7,7 +7,7 @@ const navigationItems = [
   { label: '원가 · 예산', to: '/budget' },
 ]
 
-export default function MealFitHeader() {
+export default function MealFitHeader({ onLogout }) {
   return (
     <header className="landing-header mealfit-header">
       <Link className="landing-logo" to="/" aria-label="MealFit 홈">
@@ -27,6 +27,11 @@ export default function MealFitHeader() {
         <Link className="header-dashboard-link" to="/my-page">
           마이페이지
         </Link>
+        {onLogout && (
+          <button type="button" className="header-dashboard-link header-logout-button" onClick={() => onLogout()}>
+            로그아웃
+          </button>
+        )}
       </div>
     </header>
   )

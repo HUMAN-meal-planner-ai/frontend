@@ -91,7 +91,7 @@ function formatWeight(grams) {
   return `${g.toFixed(1)}g`
 }
 
-function WeeklyMealPlanPage() {
+function WeeklyMealPlanPage({ onLogout }) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const requestedWeekStart = normalizeMonday(searchParams.get('weekStartDate') || getMonday())
@@ -534,7 +534,9 @@ function WeeklyMealPlanPage() {
     const limitWarning = exceedsWeeklyLimits({ menuId: menu.menuId }, weeklyMenuOccurrences, menuProfileById)
       ? ` ⚠ 주간 반복 상한(동일 메뉴 ${MAX_MENU_REPEAT_PER_WEEK}회·주재료 ${MAX_PRIMARY_INGREDIENT_USES_PER_WEEK}회)을 넘습니다.`
       : ''
-    setMessage(`"${menu.menuName}" 메뉴를 추가했습니다. [식단 저장]을 누르면 DB에 반영됩니다.${limitWarning}`)
+    setMessage(
+      `"${menu.menuName}" 메뉴를 추가했습니다. [식단 저장]을 누르면 DB에 반영됩니다.${limitWarning}`
+    )
     setIsAddMenuOpen(false)
     handleSelectMenu({
       menuId: menuItem.menuId,
@@ -1030,7 +1032,7 @@ function WeeklyMealPlanPage() {
 
   return (
     <main className="weekly-meal-page">
-      <MealFitHeader />
+      <MealFitHeader onLogout={onLogout} />
 
       <section className="weekly-meal-content">
         {/* 상단 헤더 및 주간 선택 컨트롤 */}

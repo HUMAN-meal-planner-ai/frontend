@@ -1,8 +1,8 @@
-.weekly-meal-page { min-height: 100vh; background: #f4f8f5; color: #1e362a; }
-.weekly-meal-content { max-width: 1080px; margin: auto; padding: 48px 24px 80px; }
+.weekly-meal-page { min-height: 100vh; background: var(--page-bg); color: #1e362a; }
+.weekly-meal-content { max-width: 1200px; margin: auto; padding: 68px 32px 100px; }
 .weekly-meal-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
-.weekly-meal-heading h1 { margin: 0 0 8px; color: #173728; font-size: 38px; font-weight: 800; letter-spacing: -1.2px; }
-.weekly-meal-heading p:not(.eyebrow) { margin: 0; color: #6b8276; font-size: 15px; }
+.weekly-meal-heading h1 { margin: 0 0 8px; font-size: var(--fs-page-title); font-weight: 800; letter-spacing: var(--ls-page-title); line-height: 1.25; color: var(--text-title); }
+.weekly-meal-heading p:not(.eyebrow) { margin: 0; color: var(--text-lead); font-size: var(--fs-lead); line-height: 1.7; }
 
 .weekly-plan-insights { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 24px; margin: 0 0 20px; padding: 20px 24px; border: 1px solid #d9e6de; border-radius: 14px; background: #fff; }
 .weekly-price-summary { display: flex; align-items: center; gap: 26px; min-width: 0; }
@@ -50,7 +50,7 @@
 .weekly-alert-warn { background: #fffdf0; border: 1px solid #fae6a2; color: #8a6409; }
 
 /* 주간 식단 보드 */
-.weekly-meal-board { display: grid; grid-template-columns: 72px repeat(7, minmax(110px, 1fr)); gap: 8px; overflow-x: auto; padding: 16px; border: 1px solid #d9e6de; border-radius: 18px; background: #fff; box-shadow: 0 4px 20px rgba(23, 55, 40, 0.04); margin-bottom: 36px; }
+.weekly-meal-board { display: grid; grid-template-columns: 72px repeat(7, minmax(110px, 1fr)); gap: 8px; overflow-x: auto; padding: 16px; border: 1px solid var(--card-border); border-radius: var(--card-radius); background: var(--card-bg); box-shadow: var(--card-shadow); margin-bottom: var(--section-gap); }
 .weekly-board-corner { display: flex; align-items: end; justify-content: center; padding-bottom: 12px; color: #789084; font-size: 12px; font-weight: 800; }
 .weekly-board-date { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 52px; border-bottom: 2px solid #eef4f0; color: #234132; }
 .weekly-board-date strong { font-size: 14px; font-weight: 700; }
@@ -82,7 +82,7 @@
 .weekly-usage-toggle-row { display: flex; justify-content: flex-end; margin: -16px 0 24px; }
 .weekly-usage-toggle-btn { min-height: 38px; padding: 0 14px; border: 1px solid #a8d5ba; border-radius: 8px; background: #f3faf5; color: #237448; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s, border-color .15s; }
 .weekly-usage-toggle-btn:hover { border-color: #2f9b64; background: #e8f6ed; }
-.weekly-ingredient-usage { margin: 0 0 36px; padding: 24px; border: 1px solid #d9e6de; border-radius: 14px; background: #fff; }
+.weekly-ingredient-usage { margin: 0 0 var(--section-gap); padding: var(--card-pad); border: 1px solid var(--card-border); border-radius: var(--card-radius); background: var(--card-bg); box-shadow: var(--card-shadow); }
 .weekly-usage-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .weekly-usage-heading h2 { margin: 8px 0 5px; color: #173728; font-size: 20px; font-weight: 800; }
 .weekly-usage-heading p { margin: 0; color: #728c7f; font-size: 12.5px; }
@@ -107,7 +107,7 @@
 .weekly-usage-menu-row p { margin: 0; color: #748a7e; font-size: 12px; }
 
 /* 메뉴 식재료 구성 및 중량 조회 섹션 */
-.menu-ingredient-section { margin-top: 24px; padding: 32px; border: 1px solid #d9e6de; border-radius: 20px; background: #fff; box-shadow: 0 6px 24px rgba(23, 55, 40, 0.05); }
+.menu-ingredient-section { margin-top: var(--section-gap); padding: var(--card-pad); border: 1px solid var(--card-border); border-radius: var(--card-radius); background: var(--card-bg); box-shadow: var(--card-shadow); }
 .ingredient-section-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; border-bottom: 1px solid #edf4f0; padding-bottom: 24px; margin-bottom: 24px; }
 .ingredient-badge-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .ingredient-section-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; background: #e3f5ea; color: #217d4d; font-size: 11px; font-weight: 800; letter-spacing: .04em; }
@@ -227,7 +227,6 @@
 @media (max-width: 840px) {
   .weekly-meal-content { padding: 32px 16px 60px; }
   .weekly-meal-heading { align-items: flex-start; flex-direction: column; }
-  .weekly-meal-heading h1 { font-size: 32px; }
   .weekly-plan-insights { grid-template-columns: 1fr; padding: 18px; }
   .weekly-price-summary { align-items: flex-start; flex-direction: column; gap: 14px; }
   .weekly-price-score { min-width: 0; padding: 0; border: 0; }
@@ -289,3 +288,5 @@
 .risk-tag { margin-left: 6px; padding: 1px 7px; border-radius: 8px; font-size: 11px; font-weight: 700; }
 .risk-tag.warning { background: #fee2e2; color: #b91c1c; }
 .risk-tag.caution { background: #fef3c7; color: #b45309; }
+
+.weekly-meal-heading .eyebrow, .meal-plan-heading .eyebrow { margin: 0 0 6px; color: #2f9b64; font-family: inherit; font-size: var(--fs-eyebrow); font-weight: 800; letter-spacing: var(--ls-eyebrow); }

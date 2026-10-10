@@ -244,7 +244,7 @@ function AppRoutes() {
       <Route path="/setup" element={<ProtectedRoute user={user}><FacilitySetupPage user={user} onAuthenticated={setUser} /></ProtectedRoute>} />
       {/* 이전에 저장된 /home 즐겨찾기도 기본 랜딩페이지로 자연스럽게 이동시킵니다. */}
       <Route path="/home" element={<Navigate to="/" replace />} />
-      <Route path="/menus" element={<ProtectedRoute user={user}><MenuListPage /></ProtectedRoute>} />
+      <Route path="/menus" element={<ProtectedRoute user={user}><MenuListPage onLogout={logout} /></ProtectedRoute>} />
       <Route path="/menus/chat" element={<ProtectedRoute user={user}><MenuChatPage /></ProtectedRoute>}/>
       <Route path="/budget" element={<ProtectedRoute user={user}><BudgetAnalysisPage user={user} onLogout={logout} /></ProtectedRoute>} />
       <Route path="/my-page" element={<ProtectedRoute user={user}><MyPage user={user} onLogout={logout} /></ProtectedRoute>} />
@@ -252,10 +252,10 @@ function AppRoutes() {
       <Route path="/manager" element={<ManagerRoute user={user}><ManagerPage user={user} onLogout={logout} /></ManagerRoute>} />
       {/* 새로 추가된 주간 식단 화면을 실제 식단 API와 연결합니다. */}
       <Route path="/meal-plans" element={<ProtectedRoute user={user}><MealPlanPage onLogout={logout} /></ProtectedRoute>} />
-      <Route path="/meal-plans/weekly" element={<ProtectedRoute user={user}><WeeklyMealPlanPage /></ProtectedRoute>} />
+      <Route path="/meal-plans/weekly" element={<ProtectedRoute user={user}><WeeklyMealPlanPage onLogout={logout} /></ProtectedRoute>} />
 
       {/* 아직 실제 기능 화면이 없는 주소는 공통 준비 중 화면을 사용합니다. */}
-      <Route path="/prices" element={<ProtectedRoute user={user}><PriceForecastPage /></ProtectedRoute>} />
+      <Route path="/prices" element={<ProtectedRoute user={user}><PriceForecastPage onLogout={logout} /></ProtectedRoute>} />
 
       {/* 정의되지 않은 주소로 접근하면 공개 첫 화면으로 되돌립니다. */}
       <Route path="*" element={<Navigate to="/" replace />} />

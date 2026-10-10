@@ -17,7 +17,7 @@ const errorMessage = (error, fallback) => (
   (error.request ? '서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.' : fallback)
 )
 
-export default function PriceForecastPage() {
+export default function PriceForecastPage({ onLogout }) {
   const chartPeriod = useMemo(() => {
     const end = new Date()
     const start = new Date(end)
@@ -106,7 +106,7 @@ export default function PriceForecastPage() {
 
   return (
     <main className="price-page">
-      <MealFitHeader />
+      <MealFitHeader onLogout={onLogout} />
 
       <section className="price-page-content">
         <div className="price-title-row">
@@ -115,7 +115,7 @@ export default function PriceForecastPage() {
             <h1>식재료 가격 예측</h1>
             <p>실제 KAMIS 대표가격과 향후 7일 평균 예측을 비교하고 위험 품목을 확인하세요.</p>
           </div>
-          <span className="price-model-badge">weekly Ridge · 7일 평균</span>
+          <div className="header-meta-pill"><span>모델 <strong>weekly Ridge</strong></span><span className="header-pill-divider" /><span>예측 기준 <strong>7일 평균</strong></span></div>
         </div>
 
         <div className="price-dashboard-grid">

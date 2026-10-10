@@ -237,7 +237,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
   return (
     <div className="budget-root-layout">
       {/* 1. 메인 공통 GNB 헤더 */}
-      <MealFitHeader />
+      <MealFitHeader onLogout={onLogout} />
 
       {/* 2. 본문 컨텐츠 컨테이너 */}
       <main className="budget-main-wrapper">
@@ -245,7 +245,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
           {/* 페이지 타이틀 & 헤더 소개 영역 */}
           <section className="budget-intro-section">
             <p className="landing-kicker">
-              <span /> SMART MEAL PLANNING · COST & BUDGET
+              SMART MEAL PLANNING · COST & BUDGET
             </p>
             <div className="budget-intro-row">
               <div>
@@ -254,11 +254,11 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                   KAMIS 실시간 시세와 7일 가격 예측 모델을 기반으로 메뉴별 원가 변동, 식재료 가격 위험 및 주간 예산 위험을 정밀 진단합니다.
                 </p>
               </div>
-              <div className="budget-meta-pill">
+              <div className="header-meta-pill">
                 <span>이번 주 편성 <strong>{currentWeekMenuLoading || currentWeekCostsLoading ? '조회 중' : currentWeekMenuError ? '-' : `${currentWeekMenuCosts.length}개`}</strong> 메뉴</span>
-                <span className="pill-divider" />
+                <span className="header-pill-divider" />
                 <span>적용 식수 <strong>{appliedParams.mealCount}명</strong></span>
-                <span className="pill-divider" />
+                <span className="header-pill-divider" />
                 <span>목표 단가 <strong>{formatWon(appliedParams.targetCost)}</strong></span>
               </div>
             </div>

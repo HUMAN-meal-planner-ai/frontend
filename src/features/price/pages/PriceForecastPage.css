@@ -1,18 +1,18 @@
-.price-page { min-height: 100vh; background: #f4f8f5; color: #173f2d; }
+.price-page { min-height: 100vh; background: var(--page-bg); color: #173f2d; }
 .price-page-header { height: 68px; padding: 0 5vw; display: flex; align-items: center; justify-content: space-between; background: #fff; border-bottom: 1px solid #dce9df; }
 .price-logo { color: #173f2d; font-size: 20px; font-weight: 900; text-decoration: none; letter-spacing: -.5px; }
 .price-logo span { color: #2f9b64; }
 .price-page-header nav { display: flex; gap: 26px; }
 .price-page-header nav a { color: #657a6d; font-size: 13px; font-weight: 700; text-decoration: none; }
 .price-page-header nav a.active { color: #20784a; }
-.price-page-content { width: min(1180px, 92vw); margin: 0 auto; padding: 44px 0 64px; }
+.price-page-content { width: min(1200px, 100%); margin: 0 auto; padding: 68px 32px 100px; }
 .price-title-row { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin-bottom: 26px; }
-.price-eyebrow { margin: 0 0 6px; color: #2f9b64; font-size: 11px; font-weight: 900; letter-spacing: 1.7px; }
-.price-title-row h1 { margin: 0; font-size: clamp(28px, 4vw, 38px); letter-spacing: -1.4px; }
-.price-title-row p:not(.price-eyebrow) { margin: 9px 0 0; color: #708378; font-size: 14px; }
+.price-eyebrow { margin: 0 0 6px; color: #2f9b64; font-size: var(--fs-eyebrow); font-weight: 800; letter-spacing: var(--ls-eyebrow); }
+.price-title-row h1 { margin: 0; font-size: var(--fs-page-title); font-weight: 800; letter-spacing: var(--ls-page-title); line-height: 1.25; color: var(--text-title); }
+.price-title-row p:not(.price-eyebrow) { margin: 9px 0 0; color: var(--text-lead); font-size: var(--fs-lead); line-height: 1.7; }
 .price-model-badge { padding: 9px 13px; border-radius: 999px; background: #e8f5ed; color: #217849; font-size: 12px; font-weight: 800; white-space: nowrap; }
-.price-dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(310px, .8fr); gap: 20px; align-items: start; }
-.price-panel { background: #fff; border: 1px solid #dce9df; border-radius: 20px; box-shadow: 0 14px 38px rgba(35, 83, 55, .07); overflow: hidden; }
+.price-dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(310px, .8fr); gap: var(--section-gap); align-items: start; }
+.price-panel { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius); box-shadow: var(--card-shadow); overflow: hidden; }
 .price-panel-heading { min-height: 68px; padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #e7f0e9; }
 .price-panel-heading span { color: #6d8275; font-size: 10px; font-weight: 900; letter-spacing: 1px; }
 .price-panel-heading h2 { margin: 3px 0 0; font-size: 18px; }

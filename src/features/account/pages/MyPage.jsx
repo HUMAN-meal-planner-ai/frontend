@@ -8,6 +8,7 @@ import {
   updateMyFacility,
   updateMyMonthlyBudget,
 } from '../api/accountApi'
+import MealFitHeader from '../../../layouts/MealFitHeader'
 import './MyPage.css'
 
 const ROLE_LABELS = { ADMIN: '관리자', MANAGER: '시설 관리자', USER: '시설 구성원' }
@@ -174,14 +175,8 @@ export default function MyPage({ user, onLogout }) {
 
   return (
     <main className="my-page">
-      <header className="my-page-header">
-        <Link to="/" className="my-page-brand">MEAL<span>FIT</span></Link>
-        <nav aria-label="마이페이지 이동">
-          <Link to="/meal-plans">주간 식단</Link>
-          <Link to="/budget">원가·예산</Link>
-          <button type="button" onClick={onLogout}>로그아웃</button>
-        </nav>
-      </header>
+      <MealFitHeader onLogout={onLogout} />
+
 
       <section className="my-page-content">
         <p className="my-page-eyebrow">ACCOUNT & FACILITY</p>

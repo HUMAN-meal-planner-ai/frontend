@@ -13,6 +13,34 @@
   --green-100: #e9f6ee;
   --line: #dce7df;
   --muted: #687c71;
+  --text-title: #173728;
+  --text-lead: #6b8276;
+  --fs-page-title: clamp(30px, 3.6vw, 40px);
+  --ls-page-title: -1.4px;
+  --fs-lead: 15px;
+  --fs-eyebrow: 11px;
+  --ls-eyebrow: 1.6px;
+  --page-bg: #f6faf7;
+  --card-bg: #fff;
+  --card-border: #dfe9e2;
+  --card-radius: 20px;
+  --card-shadow: 0 12px 36px rgba(35, 83, 55, .06);
+  --card-pad: 24px;
+  --section-gap: 24px;
+  --text-title: #173728;
+  --text-lead: #6b8276;
+  --fs-page-title: clamp(30px, 3.6vw, 40px);
+  --ls-page-title: -1.4px;
+  --fs-lead: 15px;
+  --fs-eyebrow: 11px;
+  --ls-eyebrow: 1.6px;
+  --page-bg: #f6faf7;
+  --card-bg: #fff;
+  --card-border: #dfe9e2;
+  --card-radius: 20px;
+  --card-shadow: 0 12px 36px rgba(35, 83, 55, .06);
+  --card-pad: 24px;
+  --section-gap: 24px;
 }
 
 * { box-sizing: border-box; }
@@ -21,3 +49,34 @@ button, input, select { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: wait; opacity: .68; }
 #root { min-height: 100vh; }
+
+/* 페이지 헤더 간격 통일 */
+:root { --head-eyebrow-gap: 8px; --head-title-gap: 12px; }
+.menu-content .menu-eyebrow, .meal-plan-heading .eyebrow, .weekly-meal-heading .eyebrow, .price-title-row .price-eyebrow, .budget-intro-section .landing-kicker {
+  display: block; margin: 0 0 var(--head-eyebrow-gap); color: #2f9b64; font-family: inherit; font-size: var(--fs-eyebrow); font-weight: 800; line-height: 1.4; letter-spacing: var(--ls-eyebrow);
+}
+.menu-content .menu-intro h1, .meal-plan-heading h1, .weekly-meal-heading h1, .price-title-row h1, .budget-intro-section .budget-intro-row h1 {
+  margin: 0 0 var(--head-title-gap); font-size: var(--fs-page-title); font-weight: 800; letter-spacing: var(--ls-page-title); line-height: 1.25; color: var(--text-title);
+}
+.menu-content .menu-description, .meal-plan-heading p:not(.eyebrow), .weekly-meal-heading p:not(.eyebrow), .price-title-row p:not(.price-eyebrow), .budget-intro-desc {
+  margin: 0; line-height: 1.7;
+}
+.weekly-meal-heading, .price-title-row, .budget-intro-section { margin-bottom: var(--section-gap); }
+.budget-intro-section .budget-intro-row { margin-bottom: var(--section-gap); }
+.budget-root-layout .budget-content-container { max-width: none; width: 100%; }
+.meal-plan-heading { margin-bottom: 0; align-items: flex-end; }
+.meal-plan-heading > div:first-child > p:last-child { margin-bottom: 0; }
+
+/* 페이지 콘텐츠 가로폭 통일 (메뉴 검색 기준) */
+.meal-plan-page .meal-plan-content, .weekly-meal-page .weekly-meal-content, .price-page .price-page-content, .budget-root-layout .budget-main-wrapper { width: min(1360px, calc(100% - 48px)); max-width: none; margin-left: auto; margin-right: auto; padding-left: 0; padding-right: 0; box-sizing: border-box; }
+@media (max-width: 1050px) { .meal-plan-page .meal-plan-content, .weekly-meal-page .weekly-meal-content, .price-page .price-page-content, .budget-root-layout .budget-main-wrapper { width: min(1200px, calc(100% - 48px)); } }
+@media (max-width: 620px) { .meal-plan-page .meal-plan-content, .weekly-meal-page .weekly-meal-content, .price-page .price-page-content, .budget-root-layout .budget-main-wrapper { width: calc(100% - 32px); } }
+
+html { scrollbar-gutter: stable; }
+
+/* 페이지 헤더 우측 요약 pill 통일 */
+.header-meta-pill { display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 18px; border-radius: 999px; background: var(--card-bg); border: 1px solid var(--card-border); box-shadow: 0 4px 14px rgba(44, 92, 62, 0.05); font-size: 13px; line-height: 1.4; color: #4a6355; white-space: nowrap; }
+.header-meta-pill strong { color: #20784a; font-weight: 800; }
+.header-pill-divider { width: 1px; height: 14px; background: #c9dbcf; }
+
+.budget-intro-row > .header-meta-pill { align-self: flex-start; margin-top: 44px; }
