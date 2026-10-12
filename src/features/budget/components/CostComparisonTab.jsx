@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { formatWon, checkIsIncreased } from '../utils/budgetUtils';
+import { formatWon, formatUnitPrice, checkIsIncreased } from '../utils/budgetUtils';
 
 export default function CostComparisonTab({
   comparisons = [],
@@ -199,13 +199,13 @@ export default function CostComparisonTab({
                         <td>{formatWon(comp?.currentCostPerPerson)}</td>
                         <td>{formatWon(comp?.futureCostPerPerson)}</td>
                         <td className={isPlus ? 'text-red fw-bold' : isMinus ? 'text-green' : ''}>
-                          {isPlus ? `+${formatWon(comp?.costDifference)}` : formatWon(comp?.costDifference)}
+                          {isPlus ? `+${formatWon(Math.abs(Number(comp?.costDifference || 0)))}` : formatWon(comp?.costDifference)}
                         </td>
                         <td className={isPlus ? 'text-red' : ''}>
-                          {isPlus ? `+${formatWon(comp?.totalCostDifference)}` : formatWon(comp?.totalCostDifference)}
+                          {isPlus ? `+${formatWon(Math.abs(Number(comp?.totalCostDifference || 0)))}` : formatWon(comp?.totalCostDifference)}
                         </td>
                         <td className={isPlus ? 'text-red fw-bold' : isMinus ? 'text-green' : ''}>
-                          {isPlus ? `▲ +${comp?.increaseRate || 0}%` : isMinus ? `▼ ${comp?.increaseRate || 0}%` : '0.00%'}
+                          {isPlus ? `▲ +${Math.abs(Number(comp?.increaseRate || 0))}%` : isMinus ? `▼ ${comp?.increaseRate || 0}%` : '0.00%'}
                         </td>
                         <td>
                           <span className={`status-pill ${isIncreased ? 'pill-danger' : 'pill-success'}`}>
@@ -271,7 +271,7 @@ export default function CostComparisonTab({
             </div>
             <span className="formula-sum-badge">
               총 인상률: <strong className={checkIsIncreased(selectedComparison) ? 'text-red' : 'text-green'}>
-                {selectedComparison?.increaseRate || 0}% ({formatWon(selectedComparison?.costDifference)})
+                {Number(selectedComparison?.increaseRate || 0) > 0 ? `+${selectedComparison.increaseRate}` : (selectedComparison?.increaseRate || 0)}% ({Number(selectedComparison?.costDifference || 0) > 0 ? `+${formatWon(selectedComparison.costDifference)}` : formatWon(selectedComparison?.costDifference)})
               </strong>
             </span>
           </div>
@@ -297,13 +297,13 @@ export default function CostComparisonTab({
                     <tr key={ing?.ingredientId || idx}>
                       <td><strong>{ing?.ingredientName || '식재료'}</strong></td>
                       <td>{Number(ing?.quantity || 0).toLocaleString()}g</td>
-                      <td>{formatWon(ing?.currentUnitPrice)}</td>
-                      <td>{formatWon(ing?.futureUnitPrice)}</td>
+                      <td>{formatUnitPrice(ing?.currentUnitPrice)}</td>
+                      <td>{formatUnitPrice(ing?.futureUnitPrice)}</td>
                       <td className={isUp ? 'text-red' : isDown ? 'text-green' : ''}>
-                        {isUp ? `▲ +${ing?.unitPriceIncreaseRate || 0}%` : isDown ? `▼ ${ing?.unitPriceIncreaseRate || 0}%` : '0%'}
+                        {isUp ? `▲ +${Math.abs(Number(ing?.unitPriceIncreaseRate || 0))}%` : isDown ? `▼ ${ing?.unitPriceIncreaseRate || 0}%` : '0%'}
                       </td>
                       <td className={isUp ? 'text-red fw-bold' : isDown ? 'text-green' : ''}>
-                        {isUp ? `+${formatWon(ing?.lineCostDifference)}` : formatWon(ing?.lineCostDifference)}
+                        {isUp ? `+${formatWon(Math.abs(Number(ing?.lineCostDifference || 0)))}` : formatWon(ing?.lineCostDifference)}
                       </td>
                     </tr>
                   );

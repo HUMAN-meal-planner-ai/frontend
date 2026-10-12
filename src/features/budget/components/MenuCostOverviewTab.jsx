@@ -401,7 +401,7 @@ export default function MenuCostOverviewTab({
                 <div key={detail.ingredientId || idx} className="formula-card-item">
                   <span className="ing-name">{detail.ingredientName}</span>
                   <span className="ing-calc">
-                    {Number(detail.quantity).toLocaleString()}g × {Number(detail.standardUnitPrice).toLocaleString()}원/g
+                    {Number(detail.quantity).toLocaleString()}g × {Number(detail.standardUnitPrice || 0).toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}원/g
                   </span>
                   <strong className="ing-cost">{formatWon(detail.lineCost)}</strong>
                   {detail.priceDate && (

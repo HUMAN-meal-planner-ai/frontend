@@ -105,6 +105,20 @@ export const formatWon = (val) => {
 };
 
 /**
+ * 식재료 단위 단가 포맷팅 (소수점 둘째 자리 표시)
+ * 예: 1.25 -> 1.25원, 1 -> 1.00원
+ */
+export const formatUnitPrice = (val, decimals = 2) => {
+  if (val === undefined || val === null || val === '') return `0.${'0'.repeat(decimals)}원`;
+  const num = Number(val);
+  if (!Number.isFinite(num)) return `0.${'0'.repeat(decimals)}원`;
+  return `${num.toLocaleString('ko-KR', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })}원`;
+};
+
+/**
  * 예산 위험도 단계 라벨
  */
 export const getRiskLabel = (level) => {
