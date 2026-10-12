@@ -208,7 +208,7 @@ export default function MenuCostOverviewTab({
                 : `📋 전체 등록 메뉴 원가 현황 (${menuCosts.length}개 메뉴)`}
             </h3>
             <span className="panel-header-tip">
-              {weekRange ? `${weekRange.startDate} ~ ${weekRange.endDate} · ` : ''}
+              {weekRange ? `${weekRange.startDate} ~ ${weekRange.endDate}${appliedParams?.baseDate ? ` (기준일: ${appliedParams.baseDate})` : ''} · ` : ''}
               행을 클릭하면 하단에 해당 메뉴의 세부 식재료 단가 계산식이 표시됩니다.
             </span>
           </div>
@@ -250,7 +250,7 @@ export default function MenuCostOverviewTab({
               {menuListLoading ? (
                 <tr>
                   <td colSpan="6" className="table-empty">
-                    이번 주 식단 메뉴를 불러오는 중입니다.
+                    선택된 주차의 식단 메뉴를 불러오는 중입니다.
                   </td>
                 </tr>
               ) : menuListError ? (
@@ -357,12 +357,21 @@ export default function MenuCostOverviewTab({
       {/* 세부 식재료 단가 계산식 */}
       <div className="budget-glass-panel formula-panel">
         <div className="panel-header-bar">
-          <h3>
-            [식재료 단가 계산식]{' '}
-            {selectedMenuDetail
-              ? `${selectedMenuDetail.menuName} (#${selectedMenuDetail.menuId})`
-              : '메뉴를 선택해 주세요'}
-          </h3>
+          <div>
+            <h3>
+              [식재료 단가 계산식]{' '}
+              <span className={`formula-mode-tag ${costMode === 'CURRENT' ? 'mode-current' : 'mode-future'}`}>
+                {costMode === 'CURRENT'
+                  ? `현재 실거래가 기준 (${appliedParams?.baseDate ? `${appliedParams.baseDate} 시점` : '최신 시세'})`
+                  : `AI 예측가 기준 (${appliedParams?.targetDate || '예측일'})`}
+              </span>
+            </h3>
+            <span className="panel-header-tip">
+              {selectedMenuDetail
+                ? `${selectedMenuDetail.menuName} (#${selectedMenuDetail.menuId})`
+                : '상단 테이블에서 메뉴를 선택해 주세요'}
+            </span>
+          </div>
           {selectedMenuDetail && (
             <div className="formula-sum-badge">
               <span>1인분 합계: <strong>{formatWon(selectedMenuDetail.costPerPerson)}</strong></span>
@@ -372,6 +381,14 @@ export default function MenuCostOverviewTab({
                 </span>
               )}
             </div>
+          )}
+        </div>
+
+        <div className="panel-mode-notice">
+          {costMode === 'CURRENT' ? (
+            <span>💡 <strong>현재 실거래가 모드</strong>: 예산 분석 기준일({appliedParams?.baseDate || '최신'}) 이전의 KAMIS 실측 시세로 1인분 원가를 산출합니다.</span>
+          ) : (
+            <span>🤖 <strong>미래 예측가 모드</strong>: AI 단가 예측 모델을 적용하여 {appliedParams?.targetDate || '지정일'} 기준 1인분 예상 원가를 산출합니다.</span>
           )}
         </div>
 
@@ -387,7 +404,11 @@ export default function MenuCostOverviewTab({
                     {Number(detail.quantity).toLocaleString()}g × {Number(detail.standardUnitPrice).toLocaleString()}원/g
                   </span>
                   <strong className="ing-cost">{formatWon(detail.lineCost)}</strong>
-                  {detail.priceDate && <small className="ing-date">{detail.priceDate}</small>}
+                  {detail.priceDate && (
+                    <small className="ing-date" title={costMode === 'CURRENT' ? '최근 실거래 등록일' : 'AI 예측 단가 일자'}>
+                      {costMode === 'CURRENT' ? `실거래: ${detail.priceDate}` : `예측일: ${detail.priceDate}`}
+                    </small>
+                  )}
                 </div>
               ))
             ) : (

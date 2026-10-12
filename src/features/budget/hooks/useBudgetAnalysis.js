@@ -14,6 +14,7 @@ import {
   getBudgetUsage,
   getMenuRisk,
   getAllMenuRisks,
+  getDashboardRiskSummary,
 } from '../api/costApi';
 import {
   reevaluateBudget,
@@ -106,6 +107,7 @@ export function useBudgetAnalysis(facilityId = 1) {
   const [executedAmountMessage, setExecutedAmountMessage] = useState('');
   const [executedAmountError, setExecutedAmountError] = useState('');
   const [highCostData, setHighCostData] = useState(null); // BUDG-003
+  const [dashboardRiskSummary, setDashboardRiskSummary] = useState(null); // DASH-005
 
   // 4. 자동화(Automation) & 모달 상태
   const [replacementCandidates, setReplacementCandidates] = useState(null);
@@ -131,12 +133,12 @@ export function useBudgetAnalysis(facilityId = 1) {
 
   // 단건 메뉴 상세 조회
   const fetchSingleMenuDetail = useCallback(
-    async (menuId, mode, count, target, tDate) => {
+    async (menuId, mode, count, target, tDate, bDate) => {
       if (!menuId) return;
       setDetailLoading(true);
       try {
         if (mode === 'CURRENT') {
-          const data = await getMenuCostDetail(menuId, { mealCount: count, targetCost: target });
+          const data = await getMenuCostDetail(menuId, { mealCount: count, targetCost: target, baseDate: bDate });
           setSelectedMenuDetail(data);
         } else {
           const data = await getFutureMenuCost(menuId, {
@@ -190,9 +192,10 @@ export function useBudgetAnalysis(facilityId = 1) {
           alertsData,
           highCostResult,
           facilityData,
+          dashRiskSummaryData,
         ] = await Promise.all([
           mode === 'CURRENT'
-            ? getAllMenuCosts({ mealCount: count, targetCost: target })
+            ? getAllMenuCosts({ mealCount: count, targetCost: target, baseDate: bDate })
             : getAllFutureMenuCosts({ targetDate: tDate, mealCount: count, targetCost: target }),
           getAllMenuCostComparisons({ targetDate: tDate, mealCount: count }),
           getAllMenuCostDrivers({ targetDate: tDate }),
@@ -250,6 +253,15 @@ export function useBudgetAnalysis(facilityId = 1) {
             console.warn('[getMyFacility] 실패:', e);
             return null;
           }),
+          // DASH-005 현재 식단 내 가격 위험 메뉴 비중 요약 조회
+          getDashboardRiskSummary({
+            facilityId: facId,
+            baseDate: bDate,
+            period: 'WEEKLY',
+          }).catch((e) => {
+            console.warn('[getDashboardRiskSummary] 실패:', e);
+            return null;
+          }),
         ]);
 
         setMenuCosts(costData || []);
@@ -265,11 +277,12 @@ export function useBudgetAnalysis(facilityId = 1) {
         setUnreadAlertCount(unreadCountData?.unreadCount || 0);
         setAlertList(alertsData || []);
         setHighCostData(highCostResult);
+        setDashboardRiskSummary(dashRiskSummaryData);
 
         if (costData && costData.length > 0) {
           const defaultMenu = costData.find((m) => checkIsExceeded(m, target)) || costData[0];
           setSelectedMenuId(defaultMenu.menuId);
-          fetchSingleMenuDetail(defaultMenu.menuId, mode, count, target, tDate);
+          fetchSingleMenuDetail(defaultMenu.menuId, mode, count, target, tDate, bDate);
         } else {
           setSelectedMenuId(null);
           setSelectedMenuDetail(null);
@@ -406,7 +419,8 @@ export function useBudgetAnalysis(facilityId = 1) {
       costMode,
       appliedParams.mealCount,
       appliedParams.targetCost,
-      appliedParams.targetDate
+      appliedParams.targetDate,
+      appliedParams.baseDate
     );
   };
 
@@ -575,6 +589,7 @@ export function useBudgetAnalysis(facilityId = 1) {
     executedAmountError,
     handleSaveExecutedAmount,
     highCostData, // BUDG-003
+    dashboardRiskSummary, // DASH-005
 
     // 자동화(Automation) & 모달 데이터
     replacementCandidates, // AUTO-006

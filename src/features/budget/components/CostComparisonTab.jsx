@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { formatWon, checkIsIncreased } from '../utils/budgetUtils';
 
 export default function CostComparisonTab({
@@ -12,19 +12,93 @@ export default function CostComparisonTab({
   const targetDateLabel = appliedParams?.targetDate || '미래 예측일자';
   const mealCountLabel = appliedParams?.mealCount ?? 1;
 
+  // 정렬 및 필터 상태 (기본값: 원래 순서)
+  const [sortOption, setSortOption] = useState('DEFAULT');
+  const [filterIncreasedOnly, setFilterIncreasedOnly] = useState(false);
+
+  // 상승 품목 수 계산
+  const increasedCount = useMemo(() => {
+    return safeComparisons.filter((comp) => Number(comp?.costDifference || 0) > 0).length;
+  }, [safeComparisons]);
+
+  // 정렬 및 필터링 적용된 목록
+  const sortedAndFilteredComparisons = useMemo(() => {
+    let list = [...safeComparisons];
+
+    // 상승 품목만 보기 필터
+    if (filterIncreasedOnly) {
+      list = list.filter((comp) => Number(comp?.costDifference || 0) > 0);
+    }
+
+    // 원래 순서 (기본)
+    if (sortOption === 'DEFAULT') {
+      return list;
+    }
+
+    // 사용자가 별도 정렬을 선택한 경우에만 정렬 실행
+    return list.sort((a, b) => {
+      const aDiff = Number(a?.costDifference || 0);
+      const bDiff = Number(b?.costDifference || 0);
+      const aRate = Number(a?.increaseRate || 0);
+      const bRate = Number(b?.increaseRate || 0);
+
+      switch (sortOption) {
+        case 'RATE_DESC': // 상승률 높은 순
+          return bRate - aRate || bDiff - aDiff;
+
+        case 'DIFF_DESC': // 1인분 변동액 큰 순
+          return bDiff - aDiff || bRate - aRate;
+
+        case 'RATE_ASC': // 변동률 낮은/하락 순
+          return aRate - bRate || aDiff - bDiff;
+
+        case 'MENU_ID': // 메뉴 ID 순
+          return (Number(a?.menuId) || 0) - (Number(b?.menuId) || 0);
+
+        default:
+          return 0;
+      }
+    });
+  }, [safeComparisons, sortOption, filterIncreasedOnly]);
+
   // 페이징 상태
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
-  const totalItems = safeComparisons.length;
+  const totalItems = sortedAndFilteredComparisons.length;
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
 
-  // 데이터 변경 시 1페이지로 리셋
+  // 데이터 또는 필터 변경 시 1페이지로 리셋
   useEffect(() => {
     setCurrentPage(1);
-  }, [totalItems]);
+  }, [totalItems, sortOption, filterIncreasedOnly]);
+
+  // 첫 번째 메뉴 자동 선택 (상승 메뉴 우선)
+  useEffect(() => {
+    if (sortedAndFilteredComparisons.length > 0) {
+      const isStillInList = sortedAndFilteredComparisons.some((m) => m.menuId === selectedMenuId);
+      if (!isStillInList && onSelectMenu) {
+        onSelectMenu(sortedAndFilteredComparisons[0].menuId);
+      }
+    }
+  }, [sortedAndFilteredComparisons, selectedMenuId, onSelectMenu]);
 
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedComparisons = safeComparisons.slice(startIndex, startIndex + pageSize);
+  const paginatedComparisons = sortedAndFilteredComparisons.slice(startIndex, startIndex + pageSize);
+
+  // 선택된 메뉴의 식재료별 상세 변동 내역도 상승 식재료 우선 정렬
+  const sortedIngredientComparisons = useMemo(() => {
+    if (!selectedComparison?.ingredientComparisons) return [];
+    return [...selectedComparison.ingredientComparisons].sort((a, b) => {
+      const aDiff = Number(a?.lineCostDifference || 0);
+      const bDiff = Number(b?.lineCostDifference || 0);
+      const aRate = Number(a?.unitPriceIncreaseRate || 0);
+      const bRate = Number(b?.unitPriceIncreaseRate || 0);
+      // 상승한 식재료가 최상단에 오도록 정렬
+      if (aDiff > 0 && bDiff <= 0) return -1;
+      if (bDiff > 0 && aDiff <= 0) return 1;
+      return bDiff - aDiff || bRate - aRate;
+    });
+  }, [selectedComparison]);
 
   // 페이지 번호 생성 헬퍼 (최대 5개 번호 표시)
   const getPageNumbers = () => {
@@ -44,21 +118,52 @@ export default function CostComparisonTab({
   return (
     <div className="tab-fade-in">
       <div className="budget-glass-panel">
-        <div className="panel-header-bar">
+        <div className="panel-header-bar flex-between-header">
           <div>
             <h3>현재가 vs {targetDateLabel} 미래 예측가 변동 비교</h3>
             <p className="panel-desc">식재료 가격 예측에 따른 1인분 및 총 원가 인상액과 변동률(%)</p>
           </div>
-          {totalItems > 0 && (
-            <span className="candidate-count-pill">
-              총 <strong>{totalItems}</strong>개 메뉴
-            </span>
-          )}
+
+          <div className="comparison-controls-group">
+            {/* 상승 품목 필터 토글 버튼 */}
+            <div className="menu-filter-toggle-group">
+              <button
+                type="button"
+                className={`menu-filter-btn ${!filterIncreasedOnly ? 'active' : ''}`}
+                onClick={() => setFilterIncreasedOnly(false)}
+              >
+                전체 메뉴 ({safeComparisons.length}개)
+              </button>
+              <button
+                type="button"
+                className={`menu-filter-btn ${filterIncreasedOnly ? 'active' : ''}`}
+                onClick={() => setFilterIncreasedOnly(true)}
+              >
+                🔥 상승 품목만 보기 ({increasedCount}개)
+              </button>
+            </div>
+
+            {/* 정렬 셀렉트 박스 */}
+            <select
+              className="budget-select-control"
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              title="원가 변동 정렬 기준"
+            >
+              <option value="DEFAULT">원래 순서 (기본)</option>
+              <option value="RATE_DESC">▲ 상승률 높은 순</option>
+              <option value="DIFF_DESC">▲ 1인분 인상액 큰 순</option>
+              <option value="RATE_ASC">▼ 변동률 낮은/하락 순</option>
+              <option value="MENU_ID">메뉴 ID 순</option>
+            </select>
+          </div>
         </div>
 
         {totalItems === 0 ? (
           <div style={{ textAlign: 'center', padding: '32px 16px' }}>
-            <p className="text-muted" style={{ margin: 0 }}>원가 변동 비교 데이터가 없습니다.</p>
+            <p className="text-muted" style={{ margin: 0 }}>
+              {filterIncreasedOnly ? '가격이 상승한 메뉴가 없습니다.' : '원가 변동 비교 데이터가 없습니다.'}
+            </p>
           </div>
         ) : (
           <>
@@ -160,7 +265,10 @@ export default function CostComparisonTab({
       {selectedComparison && (
         <div className="budget-glass-panel">
           <div className="panel-header-bar">
-            <h3>[식재료별 단가 변동 내역] {selectedComparison?.menuName || ''}</h3>
+            <div>
+              <h3>[식재료별 단가 변동 내역] {selectedComparison?.menuName || ''}</h3>
+              <span className="panel-header-tip">가격이 상승한 주요 식재료가 상단에 먼저 표시됩니다.</span>
+            </div>
             <span className="formula-sum-badge">
               총 인상률: <strong className={checkIsIncreased(selectedComparison) ? 'text-red' : 'text-green'}>
                 {selectedComparison?.increaseRate || 0}% ({formatWon(selectedComparison?.costDifference)})
@@ -181,7 +289,7 @@ export default function CostComparisonTab({
                 </tr>
               </thead>
               <tbody>
-                {selectedComparison?.ingredientComparisons?.map((ing, idx) => {
+                {sortedIngredientComparisons.map((ing, idx) => {
                   const lineDiff = Number(ing?.lineCostDifference || 0);
                   const isUp = lineDiff > 0;
                   const isDown = lineDiff < 0;

@@ -5,7 +5,7 @@ import MealFitHeader from '../../../layouts/MealFitHeader';
 import { getWeeklyMealPlan } from '../../mealplan/api/mealPlanApi';
 import { getFutureMenuCost, getMenuCostDetail } from '../api/costApi';
 import { useBudgetAnalysis } from '../hooks/useBudgetAnalysis';
-import { formatWon } from '../utils/budgetUtils';
+import { formatWon, checkIsRisk } from '../utils/budgetUtils';
 
 import BudgetFilterCard from '../components/BudgetFilterCard';
 import BudgetRiskHero from '../components/BudgetRiskHero';
@@ -27,9 +27,15 @@ function formatLocalDate(date) {
   return `${year}-${month}-${day}`;
 }
 
-function getCurrentWeekRange() {
-  const today = new Date();
-  const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+function getWeekRangeFromDate(dateStr) {
+  let targetDate;
+  if (dateStr) {
+    const [y, m, d] = String(dateStr).split('-').map(Number);
+    targetDate = new Date(y, m - 1, d);
+  } else {
+    targetDate = new Date();
+  }
+  const monday = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
   const daysFromMonday = (monday.getDay() + 6) % 7;
   monday.setDate(monday.getDate() - daysFromMonday);
   const sunday = new Date(monday);
@@ -40,7 +46,6 @@ function getCurrentWeekRange() {
 // 상단 GNB 네비게이션 아이템
 export default function BudgetAnalysisPage({ user, onLogout }) {
   const navigate = useNavigate();
-  const currentWeekRange = useMemo(() => getCurrentWeekRange(), []);
   const [currentWeekMenus, setCurrentWeekMenus] = useState(null);
   const [currentWeekMenuLoading, setCurrentWeekMenuLoading] = useState(true);
   const [currentWeekMenuError, setCurrentWeekMenuError] = useState('');
@@ -76,6 +81,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     monthlyBudgetMessage,
     monthlyBudgetError,
     highCostData, // BUDG-003
+    dashboardRiskSummary, // DASH-005
 
     replacementCandidates,
     unreadAlertCount,
@@ -112,8 +118,33 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     handleCloseReplacementModal,
   } = useBudgetAnalysis(user?.facilityId || user?.facility?.id || 1);
 
+  // 상단 필터에서 적용된 기준일(appliedParams.baseDate)을 바탕으로 해당 주차 날짜 범위 계산
+  const currentWeekRange = useMemo(
+    () => getWeekRangeFromDate(appliedParams?.baseDate),
+    [appliedParams?.baseDate]
+  );
+
+  // 실제 시설 예산 초과 여부 판정 (전체 마스터 메뉴가 아닌, 시설 예산 잔여액 및 위험도 지표 기준)
+  const isBudgetExceeded = useMemo(() => {
+    if (budgetRisk) {
+      return (
+        checkIsRisk(budgetRisk) ||
+        budgetRisk.riskLevel === 'WARNING' ||
+        budgetRisk.riskLevel === 'DANGER' ||
+        Boolean(budgetRisk.isRisk) ||
+        (Boolean(budgetRisk.oneWeekIsRisk) && Number(budgetRisk.oneWeekExceededAmount) > 0)
+      );
+    }
+    if (budgetUsage) {
+      return budgetUsage.status === 'EXCEEDED' || budgetUsage.status === 'WARNING';
+    }
+    return false;
+  }, [budgetRisk, budgetUsage]);
+
   useEffect(() => {
     let active = true;
+    setCurrentWeekMenuLoading(true);
+    setCurrentWeekMenuError('');
     getWeeklyMealPlan(currentWeekRange.startDate)
       .then(({ data }) => {
         if (!active) return;
@@ -135,7 +166,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
       .catch((requestError) => {
         if (!active) return;
         setCurrentWeekMenus([]);
-        setCurrentWeekMenuError(requestError.response?.data?.message || '이번 주 식단을 불러오지 못했습니다.');
+        setCurrentWeekMenuError(requestError.response?.data?.message || '선택한 주차의 식단을 불러오지 못했습니다.');
       })
       .finally(() => {
         if (active) setCurrentWeekMenuLoading(false);
@@ -157,7 +188,11 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     let active = true;
     const requests = currentWeekMenus.map(({ menuId }) => (
       costMode === 'CURRENT'
-        ? getMenuCostDetail(menuId, { mealCount: appliedParams.mealCount, targetCost: appliedParams.targetCost })
+        ? getMenuCostDetail(menuId, {
+          mealCount: appliedParams.mealCount,
+          targetCost: appliedParams.targetCost,
+          baseDate: appliedParams.baseDate,
+        })
         : getFutureMenuCost(menuId, {
           targetDate: appliedParams.targetDate,
           mealCount: appliedParams.mealCount,
@@ -196,7 +231,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     });
 
     return () => { active = false; };
-  }, [currentWeekMenus, costMode, appliedParams.mealCount, appliedParams.targetCost, appliedParams.targetDate, weeklyMenuCostRequestKey]);
+  }, [currentWeekMenus, costMode, appliedParams.mealCount, appliedParams.targetCost, appliedParams.targetDate, appliedParams.baseDate, weeklyMenuCostRequestKey]);
 
   const currentWeekMenuIdSet = useMemo(
     () => new Set((currentWeekMenus || []).map((menu) => String(menu.menuId))),
@@ -209,6 +244,13 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     && currentWeekMenuIdSet.has(String(selectedMenuDetail.menuId))
     ? selectedMenuDetail
     : null;
+
+  // 원가 모드(현재 실거래가 / 미래 예측가) 또는 기준일/선택메뉴 변경 시 상세 데이터 즉시 재조회
+  useEffect(() => {
+    if (selectedMenuId && currentWeekMenuIdSet.has(String(selectedMenuId))) {
+      handleSelectMenu(selectedMenuId);
+    }
+  }, [costMode, selectedMenuId, appliedParams.baseDate]);
 
   // 실시간 재평가 실행 클릭 시 알림
   const handleReevaluateClick = async () => {
@@ -255,7 +297,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                 </p>
               </div>
               <div className="header-meta-pill">
-                <span>이번 주 편성 <strong>{currentWeekMenuLoading || currentWeekCostsLoading ? '조회 중' : currentWeekMenuError ? '-' : `${currentWeekMenuCosts.length}개`}</strong> 메뉴</span>
+                <span>기준 주차 편성 <strong>{currentWeekMenuLoading || currentWeekCostsLoading ? '조회 중' : currentWeekMenuError ? '-' : `${currentWeekMenuCosts.length}개`}</strong> 메뉴</span>
                 <span className="header-pill-divider" />
                 <span>적용 식수 <strong>{appliedParams.mealCount}명</strong></span>
                 <span className="header-pill-divider" />
@@ -375,6 +417,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
                   selectedDriver={selectedDriver}
                   replacementCandidates={replacementCandidates}
                   highCostData={highCostData}
+                  dashboardRiskSummary={dashboardRiskSummary}
                   onOpenReplacementModal={handleOpenReplacementModal}
                 />
               )}
@@ -401,7 +444,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
             onNavigateMenus={() => window.location.href = '/menus'}
             onVerifyWeeklyPlan={handleVerifyWeeklyPlanClick}
             onConfirmReview={() => alert('원가 및 예산 분석 검토가 완료되었습니다.')}
-            isExceeded={summary.totalExceeded > 0}
+            isExceeded={isBudgetExceeded}
           />
 
           {/* 6. [AUTO-002] 예산 경고 알림 관리 모달 */}

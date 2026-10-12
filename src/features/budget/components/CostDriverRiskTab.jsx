@@ -49,6 +49,7 @@ export default function CostDriverRiskTab({
   selectedDriver = null,
   replacementCandidates = null,
   highCostData = null, // BUDG-003
+  dashboardRiskSummary = null, // DASH-005
   onOpenReplacementModal = null, // BUDG-005
 }) {
   const candidates = replacementCandidates?.candidates || [];
@@ -90,6 +91,36 @@ export default function CostDriverRiskTab({
 
   return (
     <div className="tab-fade-in">
+      {/* 0. [DASH-005] 현재 식단 내 가격 위험 메뉴 비중 요약 */}
+      {dashboardRiskSummary && (
+        <section className="budget-glass-panel dash-risk-summary-section">
+          <div className="panel-header-bar flex-between-header">
+            <div>
+              <div className="panel-title-with-badge">
+                <h4>📊 [DASH-005] 현재 식단 내 가격 위험 메뉴 비중 요약</h4>
+                <span className={`risk-pill-badge ${Number(dashboardRiskSummary.riskMenuRatio || 0) > 20 ? 'risk-badge-danger' : Number(dashboardRiskSummary.riskMenuRatio || 0) > 0 ? 'risk-badge-caution' : 'risk-badge-safe'}`}>
+                  위험 비중 {dashboardRiskSummary.riskMenuRatio ?? 0}%
+                </span>
+              </div>
+              <p className="panel-desc">
+                현재 주간 식단({dashboardRiskSummary.startDate || ''} ~ {dashboardRiskSummary.endDate || ''}) 중 가격 급등 위험 식재료가 포함된 메뉴의 점유 비중과 비용 분포입니다.
+              </p>
+            </div>
+            <div className="dash-summary-kpis-mini">
+              <span className="dash-kpi-chip">
+                총 편성 메뉴: <strong>{dashboardRiskSummary.totalMenuCount ?? 0}개</strong>
+              </span>
+              <span className="dash-kpi-chip">
+                위험 메뉴: <strong className="text-red">{dashboardRiskSummary.riskMenuCount ?? 0}개</strong>
+              </span>
+              <span className="dash-kpi-chip">
+                비용 위험 비중: <strong className="text-red">{dashboardRiskSummary.costRiskRatio ?? 0}%</strong>
+              </span>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 1. [BUDG-003] 선택 주차 식단 비용 기여도 높은 메뉴 식별 & 재구성 변경 검토 후보 */}
       {highCostCandidates.length > 0 && (
         <section className="budget-glass-panel high-cost-detection-panel">

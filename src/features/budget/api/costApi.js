@@ -8,9 +8,10 @@ import api from '../../../api/axios';
  * @returns {Promise<Array>} MenuCostResponse 목록
  */
 export async function getAllMenuCosts(params = {}) {
-  const { mealCount = 100, targetCost } = params;
+  const { mealCount = 100, targetCost, baseDate } = params;
   const { data } = await api.get('/api/cost/menus', {
     params: {
+      ...(baseDate ? { baseDate } : {}),
       mealCount,
       ...(targetCost !== undefined && targetCost !== null ? { targetCost } : {}),
     },
@@ -24,12 +25,14 @@ export async function getAllMenuCosts(params = {}) {
  * @param {Object} params
  * @param {number} [params.mealCount=100] 식수 인원
  * @param {number} [params.targetCost] 1인당 목표 단가
+ * @param {string} [params.baseDate] 예산분석 기준일 (YYYY-MM-DD)
  * @returns {Promise<Object>} MenuCostResponse 단건
  */
 export async function getMenuCostDetail(menuId, params = {}) {
-  const { mealCount = 100, targetCost } = params;
+  const { mealCount = 100, targetCost, baseDate } = params;
   const { data } = await api.get(`/api/cost/menus/${menuId}`, {
     params: {
+      ...(baseDate ? { baseDate } : {}),
       mealCount,
       ...(targetCost !== undefined && targetCost !== null ? { targetCost } : {}),
     },
@@ -318,3 +321,24 @@ export async function batchPredictMealPlanRiskML(items) {
   if (!response.ok) throw new Error('AI 식단 위험도 일괄 예측 요청 실패');
   return response.json();
 }
+
+/**
+ * 19. [DASH-005] 현재 식단 내 가격 위험 메뉴 비중 요약 조회
+ * @param {Object} params
+ * @param {number|string} [params.facilityId=1] 시설 ID
+ * @param {string} [params.baseDate] 기준 일자 (YYYY-MM-DD)
+ * @param {string} [params.period='WEEKLY'] 분석 기간 ('WEEKLY'|'DAILY')
+ * @returns {Promise<Object>} DashboardMenuRiskRatioResponse
+ */
+export async function getDashboardRiskSummary(params = {}) {
+  const { facilityId = 1, baseDate, period = 'WEEKLY' } = params;
+  const { data } = await api.get('/api/dashboard/risk-summary', {
+    params: {
+      facilityId,
+      ...(baseDate ? { baseDate } : {}),
+      period,
+    },
+  });
+  return data;
+}
+
