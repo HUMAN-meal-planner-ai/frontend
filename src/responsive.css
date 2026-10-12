@@ -1,0 +1,129 @@
+/*
+ * 반응형 보강 스타일
+ * 각 화면 CSS 뒤에 마지막으로 불러와 PC·태블릿·모바일에서 공통으로 적용되는 규칙을 모읍니다.
+ * (화면별 레이아웃 전환은 각 페이지 CSS의 @media 규칙을 따르고, 여기서는 공통 보정만 합니다.)
+ */
+
+/* ---------- 공통 기반 ---------- */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overflow-x: clip; -webkit-tap-highlight-color: rgba(47, 155, 100, .12); }
+img, svg, video, canvas { max-width: 100%; }
+table { max-width: 100%; }
+/* 긴 한글·영문·URL이 카드 밖으로 밀려나가지 않도록 합니다. */
+h1, h2, h3, h4, p, li, td, th, dd, dt, label, strong, span { overflow-wrap: break-word; word-break: keep-all; }
+/* 모바일 브라우저의 주소창 높이 변화에도 전체 높이가 맞도록 합니다. */
+@supports (min-height: 100dvh) {
+  body, #root { min-height: 100dvh; }
+}
+
+/* 넓은 화면에서는 본문이 지나치게 늘어나지 않도록 합니다. */
+@media (min-width: 1600px) {
+  .meal-plan-page .meal-plan-content, .weekly-meal-page .weekly-meal-content,
+  .price-page .price-page-content, .budget-root-layout .budget-main-wrapper { max-width: 1320px; }
+}
+
+/* ---------- 태블릿 (≤ 900px) ---------- */
+@media (max-width: 900px) {
+  .recommend-modal-card, .menu-modal, .budget-modal-card, .reconstruct-modal-card { max-height: calc(100dvh - 32px); overflow-y: auto; }
+  .log-detail { max-height: calc(100dvh - 32px); overflow-y: auto; }
+
+  /* 메뉴 검색: 태블릿 폭에서 우측 보조 패널이 좁은 열에 눌리지 않도록 한 열로 쌓습니다. */
+  .menu-planning-layout { grid-template-columns: 1fr; }
+  .menu-sidebar { position: static; grid-template-columns: 1fr; max-height: none; overflow: visible; }
+  .menu-basket { position: static; }
+
+  /* 관리자·시설 관리자 상단 메뉴: 글자가 줄바꿈되지 않고 가로로 스크롤되게 합니다. */
+  .admin-logo { white-space: nowrap; }
+  .admin-page, .manager-page { grid-template-columns: minmax(0, 1fr); }
+  .admin-sidebar, .manager-sidebar { overflow: visible; min-width: 0; }
+  .admin-sidebar nav, .manager-sidebar nav { min-width: 0; flex: 1 1 auto; overflow-x: auto; scrollbar-width: none; }
+  .admin-sidebar nav::-webkit-scrollbar, .manager-sidebar nav::-webkit-scrollbar { display: none; }
+  .admin-logo, .admin-account, .manager-account { flex-shrink: 0; }
+  .admin-sidebar nav a, .admin-sidebar nav button, .manager-sidebar nav a { white-space: nowrap; }
+}
+
+/* ---------- 모바일 (≤ 700px) ---------- */
+@media (max-width: 700px) {
+  /* iOS는 16px 미만 입력창을 누르면 화면을 확대하므로 입력 글자는 16px 이상으로 유지합니다. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
+
+  /* 상단 헤더·메뉴 링크의 터치 영역을 확보합니다. */
+  .landing-logo, .coming-soon-logo { min-height: 44px; }
+  .landing-header .header-dashboard-link, .landing-header .header-logout-button,
+  .landing-auth-actions a, .landing-auth-actions button { min-height: 40px; padding-inline: 6px; display: inline-flex; align-items: center; }
+  .landing-nav a { min-height: 40px; display: inline-flex; align-items: center; }
+
+  /* 너무 작은 보조 글자는 모바일에서 읽을 수 있는 크기로 키웁니다. */
+  .menu-ai-banner-label, .primary-tag, .status-badge, .role-badge, .admin-role-chip,
+  .market-source-badge, .saving-badge, .admin-page th, .admin-page small, .risk-tag { font-size: 11px; }
+  .market-intro small, .market-live-dot, .market-note span, .market-note p, .produce-visual i,
+  .produce-card-body small, .produce-price-row span { font-size: 11px; }
+  .admin-topbar p, .admin-welcome p:first-child, .admin-summary-grid article p,
+  .member-panel-heading p, .member-panel-heading span { font-size: 11px; }
+  .role-select { min-height: 36px; }
+  .price-history-table td, .price-ranking-table td, .price-source-table td, .error-log-table td { font-size: 11px; }
+  .price-ranking-table td small, .error-log-table td small { font-size: 10px; }
+  .price-section-title span, .price-section-title b, .price-collection-summary span,
+  .price-collection-summary p, .price-collection-summary small, .operations-heading p { font-size: 11px; }
+
+  /* 관리자·시설 관리자 상단 바: 1줄은 로고+로그아웃, 2줄은 메뉴(가로 스크롤)로 나눕니다. */
+  .admin-sidebar, .manager-sidebar { flex-wrap: wrap; row-gap: 8px; padding: 12px 16px; }
+  .admin-sidebar nav, .manager-sidebar nav { order: 3; flex: 1 0 100%; margin-left: 0; padding-bottom: 2px; }
+  .admin-account, .manager-account { margin-left: auto; }
+  .admin-account button, .manager-account button { min-height: 40px; }
+  .admin-sidebar nav a, .admin-sidebar nav button { min-height: 40px; }
+  .admin-logo { min-height: 40px; display: inline-flex; align-items: center; }
+
+  /* 우측 하단 가이드 버튼이 콘텐츠를 가리지 않도록 크기를 줄이고 여백을 둡니다. */
+  .guide-widget { right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); }
+  .guide-toggle { width: 46px; height: 46px; font-size: 21px; }
+  .guide-panel { width: calc(100vw - 28px); max-width: none; height: min(460px, calc(100dvh - 100px)); }
+  #root { padding-bottom: env(safe-area-inset-bottom); }
+  .weekly-meal-content, .meal-plan-content, .price-page-content, .budget-main-wrapper, .menu-content { padding-bottom: 88px; }
+
+  /* 모달은 화면 가장자리에 붙지 않게 여백을 줄이고 스크롤되게 합니다. */
+  .recommend-modal-backdrop, .budget-modal-overlay, .menu-modal-overlay { padding: 12px; align-items: flex-end; }
+  .recommend-modal-card, .menu-modal, .budget-modal-card, .reconstruct-modal-card { padding: 20px 16px; border-radius: 18px; width: 100%; }
+  .modal-close-btn { width: 40px; height: 40px; }
+
+  /* 알림 토스트는 화면 폭에 맞춥니다. */
+  .risk-toast { right: 12px; left: 12px; width: auto; top: 64px; }
+
+  /* 주간 식단 상단 컨트롤: 식수·날짜·저장 버튼이 한 줄에 넘치지 않고 줄바꿈되게 합니다. */
+  .weekly-header-controls { flex-wrap: wrap; width: 100%; gap: 10px; }
+  .weekly-header-controls > * { min-width: 0; }
+  .weekly-header-controls > .weekly-meal-count-box, .weekly-header-controls > input[type="date"] { flex: 1 1 140px; }
+  .weekly-header-controls > button { flex: 1 1 100%; min-height: 44px; }
+  .weekly-meal-count-box { white-space: nowrap; }
+  .weekly-meal-count-box input { width: 64px; }
+
+  /* 버튼·칩의 터치 영역 */
+  .weekly-add-menu-btn, .weekly-menu-chip, .weekly-menu-delete-btn { min-height: 32px; }
+  .weekly-menu-delete-btn { min-width: 32px; }
+
+  /* 표는 화면 안에서 가로로 스크롤되게 합니다. */
+  .member-table-wrap, .price-source-table-wrap, .price-ranking-table-card, .log-table-wrap,
+  [class*="table-wrap"], [class*="table-scroll"] { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* 탭·칩 줄은 줄바꿈 대신 가로 스크롤로 보여 주고 스크롤바는 숨깁니다. */
+  .nav-tab-list, .budget-nav-tabs, .landing-nav { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .nav-tab-list::-webkit-scrollbar, .budget-nav-tabs::-webkit-scrollbar, .landing-nav::-webkit-scrollbar { display: none; }
+}
+
+/* ---------- 작은 모바일 (≤ 380px) ---------- */
+@media (max-width: 380px) {
+  :root { --card-pad: 18px; --section-gap: 18px; }
+  .landing-header { padding-inline: 14px; }
+  .weekly-meal-content, .meal-plan-content, .price-page-content, .menu-content { padding-inline: 12px; }
+}
+
+/* ---------- 가로 모드·낮은 화면 ---------- */
+@media (max-height: 500px) and (orientation: landscape) {
+  .guide-panel { height: calc(100dvh - 80px); }
+  .recommend-modal-backdrop, .budget-modal-overlay, .menu-modal-overlay { align-items: center; }
+}
+
+/* ---------- 터치 기기: hover 전용 효과 제거로 눌림 상태가 남지 않게 합니다. ---------- */
+@media (hover: none) {
+  .weekly-save-header-btn:hover:not(:disabled) { transform: none; }
+}
