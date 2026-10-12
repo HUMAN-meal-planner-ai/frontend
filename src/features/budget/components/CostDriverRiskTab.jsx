@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { formatCurrency, formatWon, checkIsCostIncrease } from '../utils/budgetUtils';
+import { formatCurrency, formatWon, formatUnitPrice, checkIsCostIncrease } from '../utils/budgetUtils';
 
 // 메뉴 위험도 태그 렌더링
 const renderRiskBadge = (riskLevel) => {
@@ -52,7 +52,9 @@ export default function CostDriverRiskTab({
   dashboardRiskSummary = null, // DASH-005
   onOpenReplacementModal = null, // BUDG-005
 }) {
-  const candidates = replacementCandidates?.candidates || [];
+  const candidates = (replacementCandidates?.candidates || []).filter(
+    (c) => Number(c?.increaseRate || 0) > 0
+  );
   const highCostCandidates = highCostData?.candidates || [];
   const safeDrivers = Array.isArray(drivers) ? drivers : [];
   const safeMenuRisks = Array.isArray(menuRisks) ? menuRisks : [];
@@ -307,7 +309,11 @@ export default function CostDriverRiskTab({
                     <span className="candidate-rank-badge">영향도 #{c.impactRank || c.rank || 1}</span>
                     <strong className="candidate-menu-name">{c.menuName}</strong>
                     <span className="candidate-surge-rate">
-                      +{c.increaseRate}% 상승
+                      {Number(c.increaseRate) > 0
+                        ? `+${c.increaseRate}% 상승`
+                        : Number(c.increaseRate) < 0
+                          ? `${c.increaseRate}% 하락`
+                          : '0% 변동'}
                     </span>
                   </div>
 
@@ -439,7 +445,12 @@ export default function CostDriverRiskTab({
                   <div className="driver-card-head">
                     <span className="id-tag">#{drv?.menuId}</span>
                     <strong className="driver-menu-title">{drv?.menuName || '메뉴'}</strong>
-                    <span className="driver-rate-tag">▲ {drv?.totalIncreaseRate || 0}%</span>
+                    {(() => {
+                      const r = Number(drv?.totalIncreaseRate || 0);
+                      if (r > 0) return <span className="driver-rate-tag">▲ +{r}%</span>;
+                      if (r < 0) return <span className="driver-rate-tag" style={{ color: '#16a34a' }}>▼ {r}%</span>;
+                      return <span className="driver-rate-tag" style={{ color: '#64748b' }}>0%</span>;
+                    })()}
                   </div>
 
                   {/* MENU-009 메뉴 종합 위험도 점수 & 프로그레스 */}
@@ -523,114 +534,157 @@ export default function CostDriverRiskTab({
       )}
 
       {/* 4. 선택된 메뉴의 세부 식재료별 변동 내역 테이블 */}
-      {(selectedMenuRisk || selectedDriver) && (
-        <div className="budget-glass-panel">
-          <div className="panel-header-bar">
-            <div>
-              <h3>
-                [식재료별 위험 요인 상세]{' '}
-                {selectedMenuRisk?.menuName || selectedDriver?.menuName || ''}
-              </h3>
-              {selectedMenuRisk?.riskSummary && (
-                <p className="panel-risk-summary-text">
-                  💡 <strong>종합 진단:</strong> {selectedMenuRisk.riskSummary}
-                </p>
-              )}
-            </div>
-            <div className="risk-header-actions">
-              {selectedMenuRisk && renderRiskBadge(selectedMenuRisk.riskLevel)}
-              <span className="formula-sum-badge">
-                메뉴 총 상승액:{' '}
-                <strong className="text-red">
-                  +{formatWon(selectedMenuRisk?.costDifference || selectedDriver?.totalCostDifference || 0)}
-                </strong>
-              </span>
-              {onOpenReplacementModal && (
-                <button
-                  type="button"
-                  className="action-pill-btn secondary btn-sm"
-                  onClick={() => onOpenReplacementModal({
-                    menuId: selectedMenuRisk?.menuId || selectedDriver?.menuId,
-                    menuName: selectedMenuRisk?.menuName || selectedDriver?.menuName,
-                    costPerPerson: selectedMenuRisk?.currentCostPerPerson || selectedDriver?.currentCostPerPerson,
-                    futureCostPerPerson: selectedMenuRisk?.futureCostPerPerson || selectedDriver?.futureCostPerPerson,
-                  })}
-                >
-                  🔄 대체 메뉴 절감액 분석
-                </button>
-              )}
-            </div>
-          </div>
+      {(selectedMenuRisk || selectedDriver) && (() => {
+        const rawIngredients = selectedMenuRisk?.riskIngredients || selectedDriver?.rankedDrivers || [];
+        // 단가 또는 원가가 실제로 상승한 식재료만 추출 및 상승액 높은 순 정렬
+        const increasedIngredients = rawIngredients
+          .filter(
+            (d) =>
+              checkIsCostIncrease(d) ||
+              Number(d?.lineCostDifference || 0) > 0 ||
+              Number(d?.unitPriceIncreaseRate || 0) > 0
+          )
+          .sort((a, b) => {
+            const diffA = Number(a?.lineCostDifference || 0);
+            const diffB = Number(b?.lineCostDifference || 0);
+            if (diffB !== diffA) return diffB - diffA;
+            return Number(b?.unitPriceIncreaseRate || 0) - Number(a?.unitPriceIncreaseRate || 0);
+          });
 
-          <div className="brand-table-wrapper">
-            <table className="brand-table">
-              <thead>
-                <tr>
-                  <th>순위</th>
-                  <th>식재료명</th>
-                  <th>사용량</th>
-                  <th>단가 변동</th>
-                  <th>상승률</th>
-                  <th>재료비 상승액</th>
-                  <th>기여율 (%)</th>
-                  <th>위험도 / 사유</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(selectedMenuRisk?.riskIngredients || selectedDriver?.rankedDrivers || []).map(
-                  (d, idx) => {
-                    const rank = d?.rank || idx + 1;
-                    const isCostUp = checkIsCostIncrease(d);
-                    const increaseRate = Number(d?.unitPriceIncreaseRate || 0);
-                    const ingRiskLevel =
-                      d?.ingredientRiskLevel ||
-                      (isCostUp && increaseRate >= 15
-                        ? 'WARNING'
-                        : isCostUp && increaseRate >= 5
-                          ? 'CAUTION'
-                          : 'SAFE');
-                    const riskReason =
-                      d?.riskReason ||
-                      (isCostUp ? `단가 ${d?.unitPriceIncreaseRate || 0}% 급등` : '가격 안정');
+        const totalDiff = Number(
+          selectedMenuRisk?.costDifference || selectedDriver?.totalCostDifference || 0
+        );
 
-                    return (
-                      <tr key={d?.ingredientId || idx} className={rank === 1 && isCostUp ? 'row-top-driver' : ''}>
-                        <td>
-                          <span className={`rank-pill ${rank === 1 ? 'rank-1' : ''}`}>#{rank}</span>
-                        </td>
-                        <td><strong>{d?.ingredientName || '식재료'}</strong></td>
-                        <td>{Number(d?.quantity || 0).toLocaleString()}g</td>
-                        <td>{formatWon(d?.currentUnitPrice)} ➔ {formatWon(d?.futureUnitPrice)}</td>
-                        <td className={isCostUp ? 'text-red' : ''}>
-                          {isCostUp ? `▲ +${d?.unitPriceIncreaseRate || 0}%` : `${d?.unitPriceIncreaseRate || 0}%`}
-                        </td>
-                        <td className={isCostUp ? 'text-red fw-bold' : ''}>
-                          {isCostUp ? `+${formatWon(d?.lineCostDifference)}` : formatWon(d?.lineCostDifference)}
-                        </td>
-                        <td>
-                          <div className="driver-bar-wrapper">
-                            <div
-                              className="driver-bar-fill"
-                              style={{ width: `${Math.min(Math.max(Number(d?.contributionRate) || 0, 0), 100)}%` }}
-                            />
-                            <span>{d?.contributionRate || 0}%</span>
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`risk-reason-pill ${(ingRiskLevel || 'safe').toLowerCase()}`}>
-                            {ingRiskLevel === 'WARNING' ? '🚨 ' : ingRiskLevel === 'CAUTION' ? '⚠️ ' : '✅ '}
-                            {riskReason}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  }
+        return (
+          <div className="budget-glass-panel">
+            <div className="panel-header-bar">
+              <div>
+                <h3>
+                  [식재료별 위험 요인 상세]{' '}
+                  {selectedMenuRisk?.menuName || selectedDriver?.menuName || ''}
+                </h3>
+                {selectedMenuRisk?.riskSummary && (
+                  <p className="panel-risk-summary-text">
+                    💡 <strong>종합 진단:</strong> {selectedMenuRisk.riskSummary}
+                  </p>
                 )}
-              </tbody>
-            </table>
+              </div>
+              <div className="risk-header-actions">
+                {selectedMenuRisk && renderRiskBadge(selectedMenuRisk.riskLevel)}
+                <span className="formula-sum-badge">
+                  메뉴 총 상승액:{' '}
+                  <strong className={totalDiff > 0 ? 'text-red' : ''}>
+                    {totalDiff > 0 ? `+${formatWon(totalDiff)}` : formatWon(totalDiff)}
+                  </strong>
+                </span>
+                {onOpenReplacementModal && (
+                  <button
+                    type="button"
+                    className="action-pill-btn secondary btn-sm"
+                    onClick={() => onOpenReplacementModal({
+                      menuId: selectedMenuRisk?.menuId || selectedDriver?.menuId,
+                      menuName: selectedMenuRisk?.menuName || selectedDriver?.menuName,
+                      costPerPerson: selectedMenuRisk?.currentCostPerPerson || selectedDriver?.currentCostPerPerson,
+                      futureCostPerPerson: selectedMenuRisk?.futureCostPerPerson || selectedDriver?.futureCostPerPerson,
+                    })}
+                  >
+                    🔄 대체 메뉴 절감액 분석
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {increasedIngredients.length === 0 ? (
+              <div
+                className="table-empty-box"
+                style={{
+                  padding: '48px 16px',
+                  textAlign: 'center',
+                  background: 'rgba(255, 255, 255, 0.6)',
+                  borderRadius: '12px',
+                  margin: '12px 0',
+                }}
+              >
+                <span style={{ fontSize: '36px', display: 'block', marginBottom: '10px' }}>✅</span>
+                <p style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1b4332' }}>
+                  위험도가 감지된 식재료가 없습니다.
+                </p>
+                <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#607d6d' }}>
+                  해당 메뉴는 단가가 상승한 식재료가 없으며, 모든 구성 품목의 가격이 안정적으로 유지되고 있습니다.
+                </p>
+              </div>
+            ) : (
+              <div className="brand-table-wrapper">
+                <table className="brand-table">
+                  <thead>
+                    <tr>
+                      <th>순위</th>
+                      <th>식재료명</th>
+                      <th>사용량</th>
+                      <th>단가 변동</th>
+                      <th>상승률</th>
+                      <th>재료비 상승액</th>
+                      <th>기여율 (%)</th>
+                      <th>위험도 / 사유</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {increasedIngredients.map((d, idx) => {
+                      const rank = idx + 1;
+                      const isCostUp = true;
+                      const increaseRate = Number(d?.unitPriceIncreaseRate || 0);
+                      const ingRiskLevel =
+                        d?.ingredientRiskLevel && d.ingredientRiskLevel !== 'SAFE'
+                          ? d.ingredientRiskLevel
+                          : increaseRate >= 15
+                            ? 'WARNING'
+                            : increaseRate >= 5
+                              ? 'CAUTION'
+                              : 'SAFE';
+                      const riskReason =
+                        d?.riskReason && d.riskReason !== '가격 변동 안정'
+                          ? d.riskReason
+                          : `단가 +${increaseRate}% 상승`;
+
+                      return (
+                        <tr key={d?.ingredientId || idx} className={rank === 1 ? 'row-top-driver' : ''}>
+                          <td>
+                            <span className={`rank-pill ${rank === 1 ? 'rank-1' : ''}`}>#{rank}</span>
+                          </td>
+                          <td><strong>{d?.ingredientName || '식재료'}</strong></td>
+                          <td>{Number(d?.quantity || 0).toLocaleString()}g</td>
+                          <td>{formatUnitPrice(d?.currentUnitPrice)} ➔ {formatUnitPrice(d?.futureUnitPrice)}</td>
+                          <td className="text-red">
+                            ▲ +{Math.abs(Number(d?.unitPriceIncreaseRate || 0))}%
+                          </td>
+                          <td className="text-red fw-bold">
+                            +{formatWon(Math.abs(Number(d?.lineCostDifference || 0)))}
+                          </td>
+                          <td>
+                            <div className="driver-bar-wrapper">
+                              <div
+                                className="driver-bar-fill"
+                                style={{ width: `${Math.min(Math.max(Number(d?.contributionRate) || 0, 0), 100)}%` }}
+                              />
+                              <span>{d?.contributionRate || 0}%</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className={`risk-reason-pill ${(ingRiskLevel || 'safe').toLowerCase()}`}>
+                              {ingRiskLevel === 'WARNING' ? '🚨 ' : ingRiskLevel === 'CAUTION' ? '⚠️ ' : '✅ '}
+                              {riskReason}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

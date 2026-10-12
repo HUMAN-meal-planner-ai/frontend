@@ -226,7 +226,7 @@ export default function MenuReplacementModal({
                         <div className="impact-metric-item">
                           <span>주간 순 절감액</span>
                           <strong className="text-green fw-bold">
-                            +{formatCurrency(weeklyImpact.weeklyTotalSavings)} ({weeklyImpact.weeklySavingsRate}%)
+                            {Number(weeklyImpact.weeklyTotalSavings) > 0 ? `+${formatCurrency(weeklyImpact.weeklyTotalSavings)}` : formatCurrency(weeklyImpact.weeklyTotalSavings)} ({weeklyImpact.weeklySavingsRate}%)
                           </strong>
                         </div>
 
