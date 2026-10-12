@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import api, { clearAuth, consumeAuthNotice, getStoredUser, saveAuth } from './api/axios'
+import { reevaluateBudget } from './features/budget/api/budgetAutomationApi'
+import BudgetRiskToast from './features/budget/components/BudgetRiskToast'
 import BudgetAnalysisPage from './features/budget/pages/BudgetAnalysisPage'
 import AdminPage from './features/admin/pages/AdminPage'
 import ManagerPage from './features/manager/pages/ManagerPage'
@@ -8,7 +10,6 @@ import MealPlanPage from './features/mealplan/pages/MealPlanPage'
 import WeeklyMealPlanPage from './features/mealplan/pages/WeeklyMealPlanPage'
 import MenuListPage from './features/menu/pages/MenuListPage'
 import LandingPage from './features/landing/pages/LandingPage'
-import PriceForecastPage from './features/price/pages/PriceForecastPage'
 import MenuChatPage from './features/chat/pages/MenuChatPage'
 import MyPage from './features/account/pages/MyPage'
 import GuideWidget from './features/guide/GuideWidget'
@@ -26,6 +27,22 @@ function getDefaultRoute(user) {
   if (user?.role === 'MANAGER' && user?.facilityId != null) return '/manager'
   // 일반 사용자는 시설 설정이 끝나면 별도 홈 화면 대신 서비스 기본 랜딩페이지로 이동합니다.
   return user?.facilityId == null ? '/setup' : '/'
+}
+
+/** 브라우저 로컬 시간 기준 YYYY-MM-DD 문자열을 만듭니다. */
+function formatLocalDate(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/** 주간 식단 화면이 주 단위로 보여주므로, 오늘이 속한 주의 월요일 날짜를 구합니다. */
+function getThisMonday(date = new Date()) {
+  const monday = new Date(date)
+  const day = monday.getDay()
+  monday.setDate(monday.getDate() + (day === 0 ? -6 : 1 - day))
+  return formatLocalDate(monday)
 }
 
 /** 로그인과 회원가입 화면 왼쪽에 공통으로 표시하는 MealFit 소개 영역입니다. */
@@ -64,7 +81,7 @@ function AuthLayout({ children }) {
  * PDF의 S01 첫 화면을 실제 인증 API에 연결합니다.
  * 성공 시 토큰을 저장하고 시설 설정 유무에 따라 설정 화면 또는 사용자 홈으로 이동합니다.
  */
-function LoginPage({ onAuthenticated }) {
+function LoginPage({ onAuthenticated, onLoggedIn }) {
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
@@ -86,6 +103,8 @@ function LoginPage({ onAuthenticated }) {
       const { data } = await api.post('/api/auth/login', form)
       saveAuth(data.accessToken, data.user)
       onAuthenticated(data.user)
+      // 예산 재평가는 응답을 기다리지 않고 백그라운드로 실행해 로그인 이동이 지연되지 않게 합니다.
+      onLoggedIn?.(data.user)
       navigate(getDefaultRoute(data.user), { replace: true })
     } catch (requestError) {
       setError(getErrorMessage(requestError, '로그인에 실패했습니다.'))
@@ -227,19 +246,58 @@ function AppRoutes() {
   const navigate = useNavigate()
   // 브라우저에 저장된 사용자 정보가 있으면 새로고침 후에도 로그인 상태를 복원합니다.
   const [user, setUser] = useState(() => getStoredUser())
+  // 로그인 직후 예산 재평가에서 위험이 감지되면 화면 어디서든 보이도록 최상위에서 토스트를 관리합니다.
+  const [riskToast, setRiskToast] = useState(null)
+  const closeRiskToast = useCallback(() => setRiskToast(null), [])
   // 로그아웃하면 저장된 JWT와 사용자 정보를 제거하고 대상 화면으로 이동합니다.
   const logout = (redirectTo = '/') => {
     clearAuth()
     setUser(null)
+    setRiskToast(null)
     const target = typeof redirectTo === 'string' ? redirectTo : '/'
     navigate(target, { replace: true })
   }
+
+  /**
+   * 로그인한 시설의 예산 초과 위험을 오늘 기준으로 다시 평가하고, 위험하면 토스트를 띄웁니다.
+   * 재평가가 실패해도 로그인과 화면 이동에는 영향이 없도록 오류는 콘솔에만 남깁니다.
+   */
+  const checkBudgetRisk = async (loggedInUser) => {
+    // 시설이 없는 계정(관리자, 시설 미등록)은 평가 대상이 없습니다.
+    if (loggedInUser?.role === 'ADMIN' || loggedInUser?.facilityId == null) return
+    try {
+      const result = await reevaluateBudget({
+        facilityId: loggedInUser.facilityId,
+        baseDate: formatLocalDate(new Date()),
+        autoSaveAlert: true,
+      })
+      // 응답을 기다리는 사이 로그아웃했다면 토스트를 띄우지 않습니다.
+      if (!getStoredUser()) return
+      const riskLevel = String(result?.riskLevel || '').toUpperCase()
+      if (!result || riskLevel === 'SAFE' || riskLevel === '') return
+      setRiskToast({
+        riskLevel,
+        warningMessage: result.warningMessage,
+        exceededAmount: result.exceededAmount,
+      })
+    } catch (requestError) {
+      console.warn('[예산 재평가 실패] 로그인 알림을 건너뜁니다.', requestError)
+    }
+  }
+
+  // 토스트를 누르면 이번 주 주간 식단 조회 화면으로 이동합니다.
+  const openRiskToast = () => {
+    setRiskToast(null)
+    navigate(`/meal-plans/weekly?weekStartDate=${getThisMonday()}`)
+  }
+
   return (
     <>
+    <BudgetRiskToast toast={riskToast} onOpen={openRiskToast} onClose={closeRiskToast} />
     <Routes>
       {/* 공개 화면: 로그인하지 않은 사용자도 접근할 수 있습니다. */}
       <Route path="/" element={<LandingPage user={user} onLogout={logout} />} />
-      <Route path="/login" element={user ? <Navigate to={getDefaultRoute(user)} replace /> : <LoginPage onAuthenticated={setUser} />} />
+      <Route path="/login" element={user ? <Navigate to={getDefaultRoute(user)} replace /> : <LoginPage onAuthenticated={setUser} onLoggedIn={checkBudgetRisk} />} />
       <Route path="/signup" element={user ? <Navigate to={getDefaultRoute(user)} replace /> : <SignupPage />} />
 
       {/* 보호 화면: 사용자 정보가 없으면 ProtectedRoute가 로그인 화면으로 이동시킵니다. */}
@@ -256,13 +314,12 @@ function AppRoutes() {
       <Route path="/meal-plans" element={<ProtectedRoute user={user}><MealPlanPage onLogout={logout} /></ProtectedRoute>} />
       <Route path="/meal-plans/weekly" element={<ProtectedRoute user={user}><WeeklyMealPlanPage onLogout={logout} /></ProtectedRoute>} />
 
-      {/* 아직 실제 기능 화면이 없는 주소는 공통 준비 중 화면을 사용합니다. */}
-      <Route path="/prices" element={<ProtectedRoute user={user}><PriceForecastPage onLogout={logout} /></ProtectedRoute>} />
+      {/* 가격 예측 화면은 주간 메뉴 조회의 위험 식재료 순위로 통합되었습니다. 이전 주소는 새 화면으로 이동시킵니다. */}
+      <Route path="/prices" element={<Navigate to="/meal-plans/weekly" replace />} />
 
       {/* 정의되지 않은 주소로 접근하면 공개 첫 화면으로 되돌립니다. */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-    <GuideWidget user={user} />
     </>
   )
 }

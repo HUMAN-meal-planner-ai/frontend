@@ -1,0 +1,101 @@
+.risk-toast {
+  position: fixed;
+  /* 상단 헤더의 마이페이지·로그아웃 버튼을 가리지 않도록 헤더 아래에 띄웁니다. */
+  top: 76px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  width: min(360px, calc(100vw - 32px));
+  background: #fff;
+  border: 1px solid #f0d9b5;
+  border-left: 5px solid #e8a33d;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(20, 40, 30, 0.18);
+  animation: risk-toast-in 0.25s ease-out;
+}
+
+.risk-toast.is-warning {
+  border-color: #f3c3c0;
+  border-left-color: #d9534f;
+}
+
+.risk-toast-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 8px 14px 16px;
+  background: none;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: #24352c;
+  cursor: pointer;
+}
+
+.risk-toast-title {
+  font-size: 15px;
+}
+
+.risk-toast.is-warning .risk-toast-title {
+  color: #b73a36;
+}
+
+.risk-toast.is-caution .risk-toast-title {
+  color: #a8691a;
+}
+
+.risk-toast-message {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #4a5a52;
+}
+
+.risk-toast-amount {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.risk-toast-link {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2f9b64;
+}
+
+.risk-toast-body:hover .risk-toast-link {
+  text-decoration: underline;
+}
+
+.risk-toast-close {
+  padding: 8px 12px;
+  background: none;
+  border: 0;
+  font-size: 20px;
+  line-height: 1;
+  color: #8a9a92;
+  cursor: pointer;
+}
+
+.risk-toast-close:hover {
+  color: #24352c;
+}
+
+@keyframes risk-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .risk-toast {
+    top: 68px;
+    right: 16px;
+  }
+}
