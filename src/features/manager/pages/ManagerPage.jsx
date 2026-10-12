@@ -166,7 +166,7 @@ export default function ManagerPage({ user, onLogout }) {
             </form>
 
             {/* 기존 프로젝트 업무 페이지로 빠르게 이동하는 바로가기 모음입니다. */}
-            <aside className="manager-quick-links"><div className="manager-section-head"><div><p>QUICK ACTIONS</p><h2>운영 업무</h2></div></div><Link to="/meal-plans"><span>주간 식단 관리</span><b>식단 편성하기 →</b></Link><Link to="/menus"><span>메뉴·식재료</span><b>메뉴 검색하기 →</b></Link><Link to="/prices"><span>가격 예측</span><b>위험 품목 보기 →</b></Link><Link to="/budget"><span>원가·예산</span><b>예산 분석하기 →</b></Link></aside>
+            <aside className="manager-quick-links"><div className="manager-section-head"><div><p>QUICK ACTIONS</p><h2>운영 업무</h2></div></div><Link to="/meal-plans"><span>주간 식단 관리</span><b>식단 편성하기 →</b></Link><Link to="/menus"><span>메뉴·식재료</span><b>메뉴 검색하기 →</b></Link><Link to="/meal-plans/weekly"><span>위험 식재료</span><b>주간 메뉴에서 보기 →</b></Link><Link to="/budget"><span>원가·예산</span><b>예산 분석하기 →</b></Link></aside>
           </section>
 
           {/*

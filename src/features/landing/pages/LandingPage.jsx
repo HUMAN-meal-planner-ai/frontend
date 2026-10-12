@@ -10,7 +10,6 @@ import { getYearOverYearBargains } from '../api/landingApi'
 const navigationItems = [
   { label: '메뉴 검색', to: '/menus' },
   { label: '식단 관리', to: '/meal-plans' },
-  { label: '가격 예측', to: '/prices' },
   { label: '원가·예산', to: '/budget' },
 ]
 
@@ -35,9 +34,9 @@ const serviceCards = [
   },
   {
     number: '03',
-    title: '가격 흐름과 위험 예측',
-    description: '식재료 가격 변화와 향후 7일 예측을 확인해 위험 품목을 먼저 찾습니다.',
-    to: '/prices',
+    title: '가격 위험 식재료 확인',
+    description: '향후 7일 가격 예측으로 위험 식재료 1~5위를 주간 메뉴 화면에서 먼저 확인합니다.',
+    to: '/meal-plans/weekly',
     tone: 'amber',
   },
   {

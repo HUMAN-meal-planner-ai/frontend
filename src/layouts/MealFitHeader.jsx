@@ -3,7 +3,6 @@ import { Link, NavLink } from 'react-router-dom'
 const navigationItems = [
   { label: '메뉴 검색', to: '/menus' },
   { label: '식단 관리', to: '/meal-plans' },
-  { label: '가격 예측', to: '/prices' },
   { label: '원가 · 예산', to: '/budget' },
 ]
 

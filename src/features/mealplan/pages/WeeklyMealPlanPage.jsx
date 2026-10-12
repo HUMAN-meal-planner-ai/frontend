@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import MealFitHeader from '../../../layouts/MealFitHeader'
+import WeeklyRiskIngredientTop5 from '../components/WeeklyRiskIngredientTop5'
 import { getMenus, getMyFacility, getWeeklyMealPlan, saveMealPlan } from '../api/mealPlanApi'
 import { getAllMenuCosts, getAllMenuRisks, getMenuCostDetail } from '../../budget/api/costApi'
 import { calculatePriceScore } from '../../budget/utils/budgetUtils'
@@ -1167,6 +1168,9 @@ function WeeklyMealPlanPage({ onLogout }) {
                 )}
               </div>
             </section>
+
+            {/* 가격 예측 기준 위험 식재료 1~5위 (기존 가격 예측 화면의 순위를 이 화면으로 통합) */}
+            <WeeklyRiskIngredientTop5 />
 
             <section className="weekly-change-needed" aria-label="변경 필요 메뉴">
               <strong>변경 필요 메뉴 {menusNeedingChange.length}개</strong>
