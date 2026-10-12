@@ -320,6 +320,8 @@ function AppRoutes() {
       {/* 정의되지 않은 주소로 접근하면 공개 첫 화면으로 되돌립니다. */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    {/* 로그인한 사용자가 모든 화면에서 원하는 페이지를 물어볼 수 있는 안내 위젯입니다. */}
+    <GuideWidget user={user} />
     </>
   )
 }
