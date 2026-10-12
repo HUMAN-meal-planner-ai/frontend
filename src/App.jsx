@@ -11,6 +11,7 @@ import LandingPage from './features/landing/pages/LandingPage'
 import PriceForecastPage from './features/price/pages/PriceForecastPage'
 import MenuChatPage from './features/chat/pages/MenuChatPage'
 import MyPage from './features/account/pages/MyPage'
+import GuideWidget from './features/guide/GuideWidget'
 import './App.css'
 
 /** 서버의 공통 오류 응답을 사용자용 문장으로 변환합니다. 네트워크 단절도 구분해 안내합니다. */
@@ -234,6 +235,7 @@ function AppRoutes() {
     navigate(target, { replace: true })
   }
   return (
+    <>
     <Routes>
       {/* 공개 화면: 로그인하지 않은 사용자도 접근할 수 있습니다. */}
       <Route path="/" element={<LandingPage user={user} onLogout={logout} />} />
@@ -260,6 +262,8 @@ function AppRoutes() {
       {/* 정의되지 않은 주소로 접근하면 공개 첫 화면으로 되돌립니다. */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    <GuideWidget user={user} />
+    </>
   )
 }
 
