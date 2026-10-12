@@ -4,7 +4,7 @@ import MealFitHeader from '../../../layouts/MealFitHeader'
 import { getMenus, getMyFacility, getWeeklyMealPlan, saveMealPlan } from '../api/mealPlanApi'
 import { getAllMenuCosts, getAllMenuRisks, getMenuCostDetail } from '../../budget/api/costApi'
 import { calculatePriceScore } from '../../budget/utils/budgetUtils'
-import { aggregatePriceInputs, buildMenuProfiles, calculatePriceFitScore, exceedsWeeklyLimits, buildWeeklyReconstruction, findMenusNeedingChange, isLowCostReliability, MAX_MENU_REPEAT_PER_WEEK, MAX_PRIMARY_INGREDIENT_USES_PER_WEEK, rankMenusForRecommendation } from '../utils/menuRecommendation'
+import { aggregatePriceInputs, buildMenuProfiles, calculatePriceFitScore, exceedsWeeklyLimits, buildWeeklyReconstruction, findMenusNeedingChange, getRecommendationDataNotices, isLowCostReliability, MAX_MENU_REPEAT_PER_WEEK, MAX_PRIMARY_INGREDIENT_USES_PER_WEEK, rankMenusForRecommendation } from '../utils/menuRecommendation'
 import { loadMenuPreferences, recordMenuAccepted, recordMenusRejected } from '../utils/menuPreference'
 import './WeeklyMealPlanPage.css'
 
@@ -342,9 +342,6 @@ function WeeklyMealPlanPage({ onLogout }) {
     let menuRisks = []
     const targetCost = Number(facility?.targetFoodCost)
     const hasTargetCost = Number.isFinite(targetCost) && targetCost > 0
-    if (!hasTargetCost) {
-      setRecommendationError('시설의 1인 목표 식재료비가 없어 예산 점수 없이 추천합니다.')
-    }
 
     const [costResult, riskResult] = await Promise.allSettled([
       hasTargetCost ? getAllMenuCosts({ mealCount: 1, targetCost }) : Promise.resolve([]),
@@ -355,11 +352,6 @@ function WeeklyMealPlanPage({ onLogout }) {
     }
     if (riskResult.status === 'fulfilled' && Array.isArray(riskResult.value)) {
       menuRisks = riskResult.value
-    }
-    if (hasTargetCost && !menuCosts.length) {
-      setRecommendationError('메뉴 원가를 불러오지 못해 원가 점수 없이 추천합니다.')
-    } else if (!menuRisks.length) {
-      setRecommendationError('가격 상승률·위험도를 불러오지 못해 해당 점수 없이 추천합니다.')
     }
 
     // 교체되는 메뉴는 주간 반복 집계에서 제외한다.
@@ -373,8 +365,9 @@ function WeeklyMealPlanPage({ onLogout }) {
       return !isReplaced
     })
 
+    const recommendationPool = unseenMenus.length ? unseenMenus : preferredPool
     const rankedCandidates = rankMenusForRecommendation(
-      unseenMenus.length ? unseenMenus : preferredPool,
+      recommendationPool,
       remainingOccurrences,
       menuCosts,
       hasTargetCost ? targetCost : null,
@@ -386,6 +379,13 @@ function WeeklyMealPlanPage({ onLogout }) {
       },
     )
 
+    setRecommendationError(getRecommendationDataNotices(
+      recommendationPool,
+      menuCosts,
+      menuRisks,
+      hasTargetCost ? targetCost : null,
+      menuById[currentId] || selectedMenu,
+    ).join(' '))
     setRecommendedMenus(rankedCandidates.slice(0, 4))
     setRecommendationLoading(false)
   }
@@ -420,12 +420,15 @@ function WeeklyMealPlanPage({ onLogout }) {
         preferences: menuPreferences,
       },
     )
+    const reconstructionNotices = getRecommendationDataNotices(
+      allMenus,
+      menuCosts,
+      riskResult.status === 'fulfilled' && Array.isArray(riskResult.value) ? riskResult.value : [],
+      hasTargetCost ? targetCost : null,
+    )
     setReconstruction({
       ...result,
-      notices: [
-        ...(hasTargetCost ? [] : ['목표 식재료비가 없어 가격 점수 없이 재구성했습니다.']),
-        ...(menuCosts.length || !hasTargetCost ? [] : ['메뉴 원가를 불러오지 못해 원가 점수 없이 재구성했습니다.']),
-      ],
+      notices: reconstructionNotices,
     })
     setReconstructionLoading(false)
   }
@@ -1864,7 +1867,6 @@ function WeeklyMealPlanPage({ onLogout }) {
 }
 
 export default WeeklyMealPlanPage
-
 
 
 

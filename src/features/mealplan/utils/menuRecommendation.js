@@ -215,6 +215,53 @@ export function calculateNutritionScore(menu, referenceMenu) {
   return clampScore(100 - averageDeviation * 100)
 }
 
+export function getRecommendationDataNotices(menus, menuCosts, menuRisks, targetCost, referenceMenu) {
+  const candidates = menus || []
+  if (!candidates.length) return []
+
+  const candidateIds = new Set(candidates.map((menu) => String(menu.menuId)))
+  const costIds = new Set(
+    (menuCosts || [])
+      .filter((cost) => isFiniteNumber(cost.costPerPerson) && Number(cost.costPerPerson) > 0)
+      .map((cost) => String(cost.menuId)),
+  )
+  const riskIds = new Set((menuRisks || []).map((risk) => String(risk.menuId)))
+  const nutritionIds = new Set(
+    candidates
+      .filter((menu) => calculateNutritionScore(menu, referenceMenu) != null)
+      .map((menu) => String(menu.menuId)),
+  )
+  const notices = []
+  const validTargetCost = isFiniteNumber(targetCost) && Number(targetCost) > 0
+
+  if (!validTargetCost) {
+    notices.push('시설의 1인 목표 식재료비가 없어 목표 예산 점수 없이 추천합니다.')
+  } else {
+    const pricedCount = [...candidateIds].filter((id) => costIds.has(id)).length
+    if (pricedCount < candidateIds.size) {
+      notices.push(pricedCount === 0
+        ? '메뉴 원가를 불러오지 못해 원가 대비 예산 점수 없이 추천합니다.'
+        : `${candidateIds.size}개 후보 중 ${pricedCount}개의 원가만 확인되어 나머지는 원가 대비 예산 점수에서 제외합니다.`)
+    }
+  }
+
+  const riskCount = [...candidateIds].filter((id) => riskIds.has(id)).length
+  if (riskCount < candidateIds.size) {
+    notices.push(riskCount === 0
+      ? '가격 상승률·위험도를 불러오지 못해 해당 위험 점수 없이 추천합니다.'
+      : `${candidateIds.size}개 후보 중 ${riskCount}개의 가격 상승률·위험도만 확인되어 나머지 위험 점수는 제외합니다.`)
+  }
+
+  const nutritionCount = [...candidateIds].filter((id) => nutritionIds.has(id)).length
+  if (nutritionCount < candidateIds.size) {
+    notices.push(nutritionCount === 0
+      ? '비교 가능한 영양 정보가 없어 영양 점수 없이 추천합니다.'
+      : `${candidateIds.size}개 후보 중 ${nutritionCount}개의 영양 정보만 비교해 점수에 반영합니다.`)
+  }
+
+  return notices
+}
+
 // 교체 대상 메뉴와 같은 슬롯·분류일수록 해당 자리에 적합하다고 본다.
 export function calculateSlotFitScore(menu, referenceMenu) {
   if (!referenceMenu) return null

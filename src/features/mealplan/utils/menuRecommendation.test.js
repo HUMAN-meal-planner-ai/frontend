@@ -14,6 +14,7 @@ import {
   calculateRecommendationScore,
   calculateSlotFitScore,
   detectCookingMethod,
+  getRecommendationDataNotices,
   rankMenusForRecommendation,
 } from './menuRecommendation.js'
 
@@ -111,6 +112,70 @@ test('종합 점수로 후보를 정렬한다', () => {
   assert.equal(ranked[1].riskLevel, null)
 })
 
+test('원가·위험 API 응답 필드가 가격 순위에 반영된다', () => {
+  const reference = {
+    menuId: 0, menuName: '기준 반찬', mainCategory: 'SIDE', subCategory: '조림', slot: 'SIDE',
+    energyKcal: 180, proteinG: 12, fatG: 7, carbohydrateG: 18, sodiumMg: 400,
+  }
+  const menus = [
+    { ...reference, menuId: 11, menuName: '두부조림' },
+    { ...reference, menuId: 12, menuName: '고등어조림', energyKcal: 240, proteinG: 20 },
+  ]
+  const costs = [
+    { menuId: 11, costPerPerson: 720, details: [{ ingredientId: 31, ingredientName: '두부', isPrimary: true, lineCost: 360 }] },
+    { menuId: 12, costPerPerson: 820, details: [{ ingredientId: 32, ingredientName: '고등어', isPrimary: true, lineCost: 500 }] },
+  ]
+  const risks = [
+    { menuId: 11, currentCostPerPerson: 720, futureCostPerPerson: 760, increaseRate: 5.56, riskLevel: 'SAFE', riskScore: 10 },
+    { menuId: 12, currentCostPerPerson: 820, futureCostPerPerson: 1100, increaseRate: 34.15, riskLevel: 'WARNING', riskScore: 85 },
+  ]
+  const ranked = rankMenusForRecommendation(menus, [], costs, 1000, {
+    menuRisks: risks,
+    replacedMenu: reference,
+  })
+
+  assert.equal(ranked[0].menuId, 11)
+  assert.ok(ranked[0].priceScore > ranked[1].priceScore)
+  assert.equal(ranked[1].riskLevel, 'WARNING')
+})
+
+test('추천 데이터 안내는 목표 단가·부분 원가·위험·영양 누락을 구분한다', () => {
+  const candidates = [
+    { menuId: 1, energyKcal: 200, proteinG: 10, fatG: 5, carbohydrateG: 30, sodiumMg: 300 },
+    { menuId: 2 },
+  ]
+  const reference = { energyKcal: 200, proteinG: 10, fatG: 5, carbohydrateG: 30, sodiumMg: 300 }
+  const notices = getRecommendationDataNotices(
+    candidates,
+    [{ menuId: 1, costPerPerson: 800 }],
+    [{ menuId: 1, riskScore: 10, increaseRate: 2 }],
+    null,
+    reference,
+  )
+
+  assert.deepEqual(notices, [
+    '시설의 1인 목표 식재료비가 없어 목표 예산 점수 없이 추천합니다.',
+    '2개 후보 중 1개의 가격 상승률·위험도만 확인되어 나머지 위험 점수는 제외합니다.',
+    '2개 후보 중 1개의 영양 정보만 비교해 점수에 반영합니다.',
+  ])
+  assert.deepEqual(
+    getRecommendationDataNotices(candidates, [], [], 1000, reference),
+    [
+      '메뉴 원가를 불러오지 못해 원가 대비 예산 점수 없이 추천합니다.',
+      '가격 상승률·위험도를 불러오지 못해 해당 위험 점수 없이 추천합니다.',
+      '2개 후보 중 1개의 영양 정보만 비교해 점수에 반영합니다.',
+    ],
+  )
+  assert.deepEqual(
+    getRecommendationDataNotices(candidates, [], [], 1000, null),
+    [
+      '메뉴 원가를 불러오지 못해 원가 대비 예산 점수 없이 추천합니다.',
+      '가격 상승률·위험도를 불러오지 못해 해당 위험 점수 없이 추천합니다.',
+      '비교 가능한 영양 정보가 없어 영양 점수 없이 추천합니다.',
+    ],
+  )
+})
+
 test('RECO-001 원가가 목표의 절반 미만이면 비용 점수를 낮춘다(신뢰도)', () => {
   const normal = calculatePriceFitScore({ costPerPerson: 800, targetCost: 1000 })
   const low = calculatePriceFitScore({ costPerPerson: 100, targetCost: 1000 })
@@ -191,4 +256,41 @@ test('주간 재구성: 위험·반복 초과 메뉴만 교체하고 이른 편�
   assert.equal(result.keeps, 3)
   assert.deepEqual(result.changes.map((change) => change.from.menuId), [3, 9])
   assert.ok(result.changes.every((change) => [5, 6].includes(change.to.menuId)))
+})
+
+test('원가·위험 API 응답 형식으로 재구성 시 경고 메뉴를 안전한 합리적 대안으로 교체한다', () => {
+  const reference = {
+    menuId: 9, menuName: '고등어조림', mainCategory: 'SIDE', subCategory: '조림', slot: 'SIDE',
+    energyKcal: 230, proteinG: 19, fatG: 12, carbohydrateG: 10, sodiumMg: 520,
+  }
+  const menus = [
+    reference,
+    { ...reference, menuId: 5, menuName: '두부조림', energyKcal: 220, proteinG: 17, fatG: 10 },
+    { ...reference, menuId: 6, menuName: '간장불고기', energyKcal: 260, proteinG: 21, fatG: 15 },
+  ]
+  const costs = [
+    { menuId: 5, costPerPerson: 680, details: [{ ingredientId: 51, ingredientName: '두부', isPrimary: true, lineCost: 340 }] },
+    { menuId: 6, costPerPerson: 950, details: [{ ingredientId: 61, ingredientName: '소고기', isPrimary: true, lineCost: 700 }] },
+  ]
+  const menuRisks = {
+    9: { menuId: 9, currentCostPerPerson: 900, futureCostPerPerson: 1250, increaseRate: 38.9, riskLevel: 'WARNING', riskScore: 88 },
+    5: { menuId: 5, currentCostPerPerson: 680, futureCostPerPerson: 700, increaseRate: 2.9, riskLevel: 'SAFE', riskScore: 8 },
+    6: { menuId: 6, currentCostPerPerson: 950, futureCostPerPerson: 1150, increaseRate: 21.1, riskLevel: 'SAFE', riskScore: 55 },
+  }
+  const result = buildWeeklyReconstruction(
+    [{ menuId: 9, mealDate: '2026-10-05', mealType: 'LUNCH', menuName: reference.menuName }],
+    menus,
+    costs,
+    1000,
+    {
+      menuRisks,
+      menuProfiles: buildMenuProfiles(menus, costs),
+      menuById: Object.fromEntries(menus.map((menu) => [menu.menuId, menu])),
+    },
+  )
+
+  assert.equal(result.changes.length, 1)
+  assert.equal(result.changes[0].to.menuId, 5)
+  assert.equal(result.changes[0].to.riskLevel, 'SAFE')
+  assert.equal(result.unresolved.length, 0)
 })
