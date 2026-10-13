@@ -20,3 +20,8 @@ export function getWeeklyMealPlan(weekStartDate) {
 export function deleteMealPlanItem(planId, menuId) {
   return api.delete(`/api/meal-plans/${planId}/items/${menuId}`);
 }
+
+// [BUDG-005] 대체 메뉴 식단 반영 (교체) API 호출 함수
+export function replaceMealPlanMenu(payload) {
+  return api.post('/api/meal-plans/replace-menu', payload);
+}

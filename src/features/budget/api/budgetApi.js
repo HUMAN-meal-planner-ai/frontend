@@ -106,3 +106,6 @@ export async function getMenuReplacementDiff(originalMenuId, params = {}) {
   });
   return data;
 }
+
+// [BUDG-005] 대체 메뉴 식단 반영 API (mealPlanApi로부터 re-export하여 단일 진실 공급원 유지)
+export { replaceMealPlanMenu } from '../../mealplan/api/mealPlanApi';

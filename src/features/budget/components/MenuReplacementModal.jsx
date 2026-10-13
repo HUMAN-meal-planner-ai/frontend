@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { formatCurrency, formatWon } from '../utils/budgetUtils';
-import { getMenuReplacementAnalysis } from '../api/budgetApi';
+import { useMenuReplacement } from '../hooks/useMenuReplacement';
 
 /**
- * [BUDG-005] 대체 메뉴 적용 전후 비용 차이 및 절감액 종합 시뮬레이션 모달
+ * [BUDG-005] 대체 메뉴 적용 전후 비용 차이 및 절감액 종합 시뮬레이션 모달 (UI Presentation 전담)
  */
 export default function MenuReplacementModal({
   isOpen,
@@ -11,49 +11,31 @@ export default function MenuReplacementModal({
   originalMenu,
   appliedParams,
   facilityId = 1,
+  onReplacementSuccess,
 }) {
-  const [selectedReplacementId, setSelectedReplacementId] = useState(null);
-  const [applyToAllOccurrences, setApplyToAllOccurrences] = useState(false);
-  const [analysisData, setAnalysisData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // 모달 열리거나 원본 메뉴/조건 변경 시 대체 분석 조회
-  useEffect(() => {
-    if (!isOpen || !originalMenu) return;
-
-    const fetchAnalysis = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getMenuReplacementAnalysis({
-          originalMenuId: originalMenu.menuId,
-          replacementMenuId: selectedReplacementId || undefined,
-          facilityId,
-          targetDate: appliedParams.targetDate,
-          mealCount: appliedParams.mealCount,
-          applyToAllOccurrences,
-        });
-        setAnalysisData(data);
-        if (!selectedReplacementId && data?.selectedReplacement?.replacementMenuId) {
-          setSelectedReplacementId(data.selectedReplacement.replacementMenuId);
-        }
-      } catch (err) {
-        console.error('[BUDG-005 대체 메뉴 분석 실패]:', err);
-        setError('대체 메뉴 비용 분석 데이터를 불러오지 못했습니다.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAnalysis();
-  }, [isOpen, originalMenu, selectedReplacementId, applyToAllOccurrences, facilityId, appliedParams]);
+  const {
+    selectedReplacementId,
+    setSelectedReplacementId,
+    applyToAllOccurrences,
+    setApplyToAllOccurrences,
+    analysisData,
+    candidateList,
+    selectedRep,
+    weeklyImpact,
+    loading,
+    submitting,
+    error,
+    handleApplyReplacement,
+  } = useMenuReplacement({
+    isOpen,
+    onClose,
+    originalMenu,
+    appliedParams,
+    facilityId,
+    onReplacementSuccess,
+  });
 
   if (!isOpen || !originalMenu) return null;
-
-  const candidateList = analysisData?.candidateReplacements || [];
-  const selectedRep = analysisData?.selectedReplacement || (candidateList.length > 0 ? candidateList[0] : null);
-  const weeklyImpact = analysisData?.weeklyImpact;
 
   return (
     <div className="budget-modal-overlay" onClick={onClose}>
@@ -258,18 +240,16 @@ export default function MenuReplacementModal({
 
         {/* 모달 하단 버튼 바 */}
         <div className="budget-modal-footer">
-          <button type="button" className="action-pill-btn secondary" onClick={onClose}>
+          <button type="button" className="action-pill-btn secondary" onClick={onClose} disabled={submitting}>
             닫기
           </button>
           <button
             type="button"
             className="action-pill-btn primary"
-            onClick={() => {
-              alert(`[${selectedRep?.replacementMenuName || '대체 메뉴'}] 교체 시뮬레이션 결과가 반영되었습니다.`);
-              onClose();
-            }}
+            disabled={submitting || !selectedRep}
+            onClick={handleApplyReplacement}
           >
-            식단에 대체 메뉴 반영하기
+            {submitting ? '식단 반영 중...' : '식단에 대체 메뉴 반영하기'}
           </button>
         </div>
       </div>

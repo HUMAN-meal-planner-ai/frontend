@@ -50,6 +50,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
   const [currentWeekMenuLoading, setCurrentWeekMenuLoading] = useState(true);
   const [currentWeekMenuError, setCurrentWeekMenuError] = useState('');
   const [weeklyMenuCostResult, setWeeklyMenuCostResult] = useState({ key: null, rows: [], error: '' });
+  const [mealPlanRefreshKey, setMealPlanRefreshKey] = useState(0);
 
   // 비즈니스 로직 & 데이터 상태 커스텀 훅 (자동화 포함)
   const {
@@ -105,6 +106,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
     riskStatusClass,
 
     handleApplyFilters,
+    refetchAll,
     handleSelectMenu,
     handleSaveMonthlyBudget,
     handleTriggerReevaluation,
@@ -172,7 +174,7 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
         if (active) setCurrentWeekMenuLoading(false);
       });
     return () => { active = false; };
-  }, [currentWeekRange.startDate]);
+  }, [currentWeekRange.startDate, mealPlanRefreshKey]);
 
   const weeklyMenuCostRequestKey = JSON.stringify([
     currentWeekMenus?.map((menu) => menu.menuId) ?? null,
@@ -273,6 +275,14 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
       }
     } catch {
       alert('식단 예산 재검증 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 대체 메뉴 식단 반영 성공 시 주간 식단 목록 및 예산 데이터 자동 새로고침
+  const handleReplacementSuccess = () => {
+    setMealPlanRefreshKey((prev) => prev + 1);
+    if (typeof refetchAll === 'function') {
+      refetchAll();
     }
   };
 
@@ -466,7 +476,8 @@ export default function BudgetAnalysisPage({ user, onLogout }) {
             onClose={handleCloseReplacementModal}
             originalMenu={replacementTargetMenu}
             appliedParams={appliedParams}
-            facilityId={1}
+            facilityId={user?.facilityId || user?.facility?.id || 1}
+            onReplacementSuccess={handleReplacementSuccess}
           />
         </div>
       </main>

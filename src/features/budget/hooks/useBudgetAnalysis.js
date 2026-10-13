@@ -342,6 +342,18 @@ export function useBudgetAnalysis(facilityId = 1) {
     );
   };
 
+  // [데이터 새로고침] 핸들러 (대체 메뉴 반영 등 이후 호출용)
+  const refetchAll = useCallback(() => {
+    fetchAllData(
+      appliedParams.mealCount,
+      appliedParams.targetCost,
+      appliedParams.targetDate,
+      appliedParams.baseDate,
+      facilityId,
+      costMode
+    );
+  }, [fetchAllData, appliedParams, facilityId, costMode]);
+
   const monthlyBudgetPreview = monthlyPlanCost && facilityProfile?.targetFoodCost != null
     ? Number(facilityProfile.targetFoodCost) * Number(monthlyPlanCost.totalMonthlyMealCount || 0)
     : null;
@@ -619,6 +631,7 @@ export function useBudgetAnalysis(facilityId = 1) {
 
     // 액션 핸들러
     handleApplyFilters,
+    refetchAll,
     handleSelectMenu,
     handleTriggerReevaluation,
     handleVerifyWeeklyPlan,
